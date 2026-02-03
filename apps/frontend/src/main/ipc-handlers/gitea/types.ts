@@ -222,3 +222,52 @@ export interface ReviewPullRequestOptions {
     body: string;
   }>;
 }
+
+// ============================================
+// PR Review Types
+// ============================================
+
+export interface PRReviewFinding {
+  id: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  category: 'security' | 'quality' | 'style' | 'test' | 'docs' | 'pattern' | 'performance';
+  title: string;
+  description: string;
+  file: string;
+  line: number;
+  endLine?: number;
+  suggestedFix?: string;
+  fixable: boolean;
+}
+
+export interface PRReviewResult {
+  prNumber: number;
+  project: string;
+  success: boolean;
+  findings: PRReviewFinding[];
+  summary: string;
+  overallStatus: 'approve' | 'request_changes' | 'comment';
+  reviewedAt: string;
+  reviewedCommitSha?: string;
+  isFollowupReview?: boolean;
+  previousReviewId?: number;
+  resolvedFindings?: string[];
+  unresolvedFindings?: string[];
+  newFindingsSinceLastReview?: string[];
+  hasPostedFindings?: boolean;
+  postedFindingIds?: string[];
+}
+
+export interface PRReviewProgress {
+  phase: 'fetching' | 'analyzing' | 'generating' | 'posting' | 'complete';
+  prNumber: number;
+  progress: number;
+  message: string;
+}
+
+export interface NewCommitsCheck {
+  hasNewCommits: boolean;
+  currentSha?: string;
+  reviewedSha?: string;
+  newCommitCount?: number;
+}
