@@ -1,0 +1,148 @@
+=== AUTO-BUILD PROGRESS ===
+
+Project: Gitea Integration with Full GitHub/GitLab Feature Parity
+请对标GitHub和GitLab功能，全面制作对接Gitea，要求和Github、Gitlab拥有完全相同的功能
+Spec: 003
+Started: 2026-02-04
+
+Workflow Type: feature
+Rationale: New Git provider integration requiring creation of new client code, IPC handlers, UI components, and type definitions. Backend and frontend must be implemented in dependency order (backend APIs first, then frontend consumption).
+
+Session 1 (Planner):
+- Created implementation_plan.json with 6 phases
+- Created/updated context.json with investigation findings
+- Total subtasks: 35
+- Created init.sh
+
+Phase Summary:
+- Phase 1 (Backend: Provider Detection): 2 subtasks, depends on []
+- Phase 2 (Backend: Gitea API Client): 7 subtasks, depends on [phase-1-backend-detection]
+- Phase 3 (Frontend: Type Definitions): 4 subtasks, depends on []
+- Phase 4 (Frontend: IPC Handlers): 9 subtasks, depends on [phase-2-backend-client, phase-3-frontend-types]
+- Phase 5 (Frontend: State & i18n): 5 subtasks, depends on [phase-3-frontend-types, phase-4-frontend-ipc]
+- Phase 6 (Integration & Verification): 6 subtasks, depends on [phase-2-backend-client, phase-4-frontend-ipc, phase-5-frontend-store]
+
+Services Involved:
+- backend (Python): Gitea API client, provider detection, config loading
+- frontend (TypeScript/React): IPC handlers, Zustand store, i18n translations, types
+
+Parallelism Analysis:
+- Max parallel phases: 2
+- Recommended workers: 1 (sequential execution recommended due to tight coupling)
+- Parallel groups: [phase-1-backend-detection, phase-3-frontend-types]
+
+Key Implementation Details:
+- REST API only (no GraphQL support in Gitea)
+- Use urllib.request pattern (following GitLab's glab_client.py)
+- Auth format: "Authorization: token <token>"
+- API prefix: /api/v1
+- Issue identifier: "index" (not 'number' or 'iid')
+- Detect: gitea.com, *.gitea.com, domains containing 'gitea' or 'gitea-'
+
+Files to Create (17 total):
+Backend:
+- runners/gitea/__init__.py
+- runners/gitea/gitea_client.py
+- runners/gitea/models.py
+
+Frontend:
+- src/main/ipc-handlers/gitea/index.ts
+- src/main/ipc-handlers/gitea/repository-handlers.ts
+- src/main/ipc-handlers/gitea/issue-handlers.ts
+- src/main/ipc-handlers/gitea/pull-request-handlers.ts
+- src/main/ipc-handlers/gitea/release-handlers.ts
+- src/main/ipc-handlers/gitea/investigation-handlers.ts
+- src/main/ipc-handlers/gitea/pr-review-handlers.ts
+- src/main/ipc-handlers/gitea/import-handlers.ts
+- src/preload/api/modules/gitea-api.ts
+- src/renderer/stores/gitea-store.ts
+- src/shared/i18n/locales/en/gitea.json
+- src/shared/i18n/locales/fr/gitea.json
+- src/shared/i18n/locales/zh-CN/gitea.json
+
+Files to Modify (8 total):
+Backend:
+- core/git_provider.py (add Gitea detection)
+- core/worktree.py (add Gitea remote URL parsing)
+
+Frontend:
+- src/shared/types/integrations.ts (add Gitea interfaces)
+- src/shared/types/task.ts (add giteaIssueIndex, giteaUrl)
+- src/shared/types/project.ts (add Gitea config)
+- src/shared/constants/ipc.ts (add GITEA channels)
+- src/preload/api/index.ts (export Gitea API)
+- src/main/ipc-handlers/index.ts (register Gitea handlers)
+
+Verification Strategy:
+- Risk Level: high
+- Test Types: unit, integration, e2e
+- Security Scan: required
+- Acceptance Criteria:
+  * Gitea provider correctly detected
+  * API client can fetch issues/PRs
+  * UI displays Gitea data
+  * AI investigation/review working
+  * Release creation working
+  * Bulk import working
+  * i18n complete (en, fr, zh-CN)
+  * Feature parity achieved
+
+=== STARTUP COMMAND ===
+
+To continue building this spec, run:
+
+  cd apps/backend
+  source .venv/bin/activate
+  python run.py --spec 003
+
+For development mode with frontend:
+  Terminal 1: cd apps/frontend && npm run dev
+  Terminal 2: cd apps/backend && source .venv/bin/activate && python run.py --spec 003
+
+=== END SESSION 1 ===
+
+PLANNING COMPLETE. Implementation will be handled by Coder Agent in separate session.
+
+=== SESSION 2: CODING ===
+
+2026-02-04:
+- Subtask 2-2: Verified load_gitea_config function exists (already implemented)
+  - Function follows GitLab pattern from glab_client.py
+  - Returns GiteaConfig | None
+  - Loads from .auto-claude/gitea/config.json
+  - Default instance_url: https://gitea.com
+
+- Subtask 2-5: Verified create_release and get_current_user methods exist (already implemented)
+  - get_current_user(): Returns authenticated user info via /user endpoint
+  - create_release(tag, name, body): Creates a release via /repos/{repo}/releases POST
+  - Both methods follow GitLab patterns from glab_client.py
+  - Uses proper endpoint encoding and error handling through _fetch()
+
+2026-02-04 (continued):
+- Subtask 3-1: Added Gitea interfaces to integrations.ts (completed)
+  - Added GiteaRepository interface (id, name, fullName, description, htmlUrl, cloneUrl, defaultBranch, private, empty, mirror, size, owner)
+  - Added GiteaIssue interface (id, number, title, body, state, labels, assignees, author, milestone, timestamps, commentsCount, urls, repoFullName, repository)
+  - Added GiteaPullRequest interface (id, number, title, body, state, merged, head, base, author, assignees, labels, milestone, mergeable, timestamps, urls)
+  - Added GiteaComment interface (id, body, author, timestamps, optional issue/pr references)
+  - Added GiteaOrganization interface (id, name, username, fullName, avatarUrl, location, website, description)
+  - Added sync/import/investigation types (GiteaSyncStatus, GiteaImportResult, GiteaInvestigationResult, GiteaInvestigationStatus)
+  - Added PR review types (GiteaPRReviewFinding, GiteaPRReviewResult, GiteaPRReviewProgress, GiteaNewCommitsCheck)
+  - Added auto-fix types (GiteaAutoFixConfig, GiteaAutoFixQueueItem, GiteaIssueBatch, GiteaBatchProgress, GiteaAutoFixProgress, GiteaAnalyzePreviewResult)
+  - Added triage types (GiteaTriageCategory, GiteaTriageConfig, GiteaTriageResult)
+  - TypeScript type check passed with no errors
+  - All types follow GitHub/GitLab patterns for consistency
+
+
+[2025-02-04] subtask-3-4 completed:
+- Added Gitea IPC channels to IPC_CHANNELS constant (57 channels defined)
+- Channels include: basic operations, PR operations, PR review, investigation events, auto-fix, and triage
+- Commit: c815e4c7
+
+[2026-02-04] subtask-6-1 completed:
+- Verified Gitea provider detection for gitea.com and self-hosted URLs
+- Enhanced detection logic from prefix-only matching to substring matching
+- Now detects hostnames like 'my-gitea.example.com', 'my-gitea-server.internal'
+- Tested 13 test cases: gitea.com, subdomains, hyphenated variants, GitHub/GitLab consistency
+- Updated _classify_hostname() in core/git_provider.py
+- Also updated GitHub and GitLab detection to use consistent substring matching
+- Commit: fc0792b2
