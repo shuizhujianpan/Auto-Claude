@@ -177,3 +177,26 @@ PLANNING COMPLETE. Implementation will be handled by Coder Agent in separate ses
   * Main IPC Registration: Gitea handlers properly registered in main index.ts
   * Endpoint Patterns: All API endpoints use correct patterns (/repos/{encodedRepo}/issues, /repos/{encodedRepository}/pulls, etc.)
 - All verification tests passed (49/49)
+
+[2026-02-04] subtask-6-4 completed:
+- Created comprehensive verification script: apps/frontend/scripts/verify-gitea-investigation.ts
+- Verified 55 test cases across 8 categories:
+  * IPC Handlers: investigation-handlers.ts exists with registerInvestigateIssue and registerInvestigationHandlers functions
+  * Spec Utilities: spec-utils.ts exists with buildIssueContext and createSpecForIssue functions
+  * IPC Channels: All 4 investigation channels defined (GITEA_INVESTIGATE_ISSUE, GITEA_INVESTIGATION_PROGRESS, GITEA_INVESTIGATION_COMPLETE, GITEA_INVESTIGATION_ERROR)
+  * Type Definitions: GiteaInvestigationResult and GiteaInvestigationStatus interfaces properly defined
+  * Zustand Store: investigationStatus, lastInvestigationResult, investigateGiteaIssue all implemented
+  * Preload API: investigateGiteaIssue, onGiteaInvestigationProgress, onGiteaInvestigationComplete, onGiteaInvestigationError all implemented
+  * i18n Translations: All 3 languages have investigation translations (en, fr, zh-CN)
+  * Handler Registration: Investigation handlers properly registered in index.ts
+- All verification tests passed (55/55)
+- Investigation flow verified:
+  1. User selects Gitea issue and clicks "Investigate"
+  2. investigateGiteaIssue() sends IPC to main process
+  3. registerInvestigateIssue handler fetches issue details and comments
+  4. Builds issue context using buildIssueContext()
+  5. Creates task spec using createSpecForIssue() with TASK.md, metadata.json, task_metadata.json
+  6. Sends progress updates via GITEA_INVESTIGATION_PROGRESS
+  7. Sends completion via GITEA_INVESTIGATION_COMPLETE
+  8. UI displays investigation results
+
