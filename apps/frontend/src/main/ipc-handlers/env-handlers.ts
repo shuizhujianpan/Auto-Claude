@@ -21,6 +21,15 @@ const GITLAB_ENV_KEYS = {
   AUTO_SYNC: 'GITLAB_AUTO_SYNC'
 } as const;
 
+// Gitea environment variable keys
+const GITEA_ENV_KEYS = {
+  ENABLED: 'GITEA_ENABLED',
+  TOKEN: 'GITEA_TOKEN',
+  INSTANCE_URL: 'GITEA_INSTANCE_URL',
+  REPO: 'GITEA_REPO',
+  AUTO_SYNC: 'GITEA_AUTO_SYNC'
+} as const;
+
 /**
  * Helper to generate .env line (DRY)
  */
@@ -133,6 +142,22 @@ export function registerEnvHandlers(
     }
     if (config.gitlabAutoSync !== undefined) {
       existingVars[GITLAB_ENV_KEYS.AUTO_SYNC] = config.gitlabAutoSync ? 'true' : 'false';
+    }
+    // Gitea Integration
+    if (config.giteaEnabled !== undefined) {
+      existingVars[GITEA_ENV_KEYS.ENABLED] = config.giteaEnabled ? 'true' : 'false';
+    }
+    if (config.giteaToken !== undefined) {
+      existingVars[GITEA_ENV_KEYS.TOKEN] = config.giteaToken;
+    }
+    if (config.giteaInstanceUrl !== undefined) {
+      existingVars[GITEA_ENV_KEYS.INSTANCE_URL] = config.giteaInstanceUrl;
+    }
+    if (config.giteaRepo !== undefined) {
+      existingVars[GITEA_ENV_KEYS.REPO] = config.giteaRepo;
+    }
+    if (config.giteaAutoSync !== undefined) {
+      existingVars[GITEA_ENV_KEYS.AUTO_SYNC] = config.giteaAutoSync ? 'true' : 'false';
     }
     // Git/Worktree Settings
     if (config.defaultBranch !== undefined) {
@@ -262,6 +287,15 @@ ${envLine(existingVars, GITLAB_ENV_KEYS.PROJECT, 'group/project')}
 ${envLine(existingVars, GITLAB_ENV_KEYS.AUTO_SYNC, 'false')}
 
 # =============================================================================
+# GITEA INTEGRATION (OPTIONAL)
+# =============================================================================
+${existingVars[GITEA_ENV_KEYS.ENABLED] !== undefined ? `${GITEA_ENV_KEYS.ENABLED}=${existingVars[GITEA_ENV_KEYS.ENABLED]}` : `# ${GITEA_ENV_KEYS.ENABLED}=true`}
+${envLine(existingVars, GITEA_ENV_KEYS.INSTANCE_URL, 'https://gitea.com')}
+${envLine(existingVars, GITEA_ENV_KEYS.TOKEN)}
+${envLine(existingVars, GITEA_ENV_KEYS.REPO, 'owner/repo')}
+${envLine(existingVars, GITEA_ENV_KEYS.AUTO_SYNC, 'false')}
+
+# =============================================================================
 # GIT/WORKTREE SETTINGS (OPTIONAL)
 # =============================================================================
 # Default base branch for worktree creation
@@ -373,6 +407,7 @@ ${existingVars['GRAPHITI_DB_PATH'] ? `GRAPHITI_DB_PATH=${existingVars['GRAPHITI_
         linearEnabled: false,
         githubEnabled: false,
         gitlabEnabled: false,
+        giteaEnabled: false,
         graphitiEnabled: false,
         enableFancyUi: true,
         claudeTokenIsGlobal: false,
@@ -445,6 +480,22 @@ ${existingVars['GRAPHITI_DB_PATH'] ? `GRAPHITI_DB_PATH=${existingVars['GRAPHITI_
       }
       if (vars[GITLAB_ENV_KEYS.AUTO_SYNC]?.toLowerCase() === 'true') {
         config.gitlabAutoSync = true;
+      }
+
+      // Gitea config
+      if (vars[GITEA_ENV_KEYS.TOKEN]) {
+        config.giteaToken = vars[GITEA_ENV_KEYS.TOKEN];
+        // Enable by default if token exists and GITEA_ENABLED is not explicitly false
+        config.giteaEnabled = vars[GITEA_ENV_KEYS.ENABLED]?.toLowerCase() !== 'false';
+      }
+      if (vars[GITEA_ENV_KEYS.INSTANCE_URL]) {
+        config.giteaInstanceUrl = vars[GITEA_ENV_KEYS.INSTANCE_URL];
+      }
+      if (vars[GITEA_ENV_KEYS.REPO]) {
+        config.giteaRepo = vars[GITEA_ENV_KEYS.REPO];
+      }
+      if (vars[GITEA_ENV_KEYS.AUTO_SYNC]?.toLowerCase() === 'true') {
+        config.giteaAutoSync = true;
       }
 
       // Git/Worktree config
