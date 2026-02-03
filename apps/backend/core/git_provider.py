@@ -33,6 +33,7 @@ def detect_git_provider(project_dir: str | Path, remote_name: str | None = None)
         'gitlab'  # for https://gitlab.company.com/user/repo.git
         'gitea'   # for git@gitea.com:user/repo.git
         'gitea'   # for https://gitea.company.com/user/repo.git
+        'gitea'   # for https://my-gitea.example.com/user/repo.git
         'unknown' # for no remote or other providers
     """
     try:
@@ -92,34 +93,30 @@ def _classify_hostname(hostname: str) -> str:
     hostname_lower = hostname.lower()
 
     # Check for GitHub (cloud and self-hosted/enterprise)
-    # Match github.com, *.github.com, or domains where a segment is or starts with 'github'
+    # Match github.com, *.github.com, or domains where a segment contains 'github'
     hostname_parts = hostname_lower.split(".")
     if (
         hostname_lower == "github.com"
         or hostname_lower.endswith(".github.com")
-        or any(
-            part == "github" or part.startswith("github-") for part in hostname_parts
-        )
+        or any("github" in part for part in hostname_parts)
     ):
         return "github"
 
     # Check for GitLab (cloud and self-hosted)
-    # Match gitlab.com, *.gitlab.com, or domains where a segment is or starts with 'gitlab'
+    # Match gitlab.com, *.gitlab.com, or domains where a segment contains 'gitlab'
     if (
         hostname_lower == "gitlab.com"
         or hostname_lower.endswith(".gitlab.com")
-        or any(
-            part == "gitlab" or part.startswith("gitlab-") for part in hostname_parts
-        )
+        or any("gitlab" in part for part in hostname_parts)
     ):
         return "gitlab"
 
     # Check for Gitea (cloud and self-hosted)
-    # Match gitea.com, *.gitea.com, or domains where a segment is or starts with 'gitea'
+    # Match gitea.com, *.gitea.com, or domains where a segment contains 'gitea'
     if (
         hostname_lower == "gitea.com"
         or hostname_lower.endswith(".gitea.com")
-        or any(part == "gitea" or part.startswith("gitea-") for part in hostname_parts)
+        or any("gitea" in part for part in hostname_parts)
     ):
         return "gitea"
 
