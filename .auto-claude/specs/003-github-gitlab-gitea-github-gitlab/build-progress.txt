@@ -162,3 +162,18 @@ PLANNING COMPLETE. Implementation will be handled by Coder Agent in separate ses
   * Gitea: /api/v1, Authorization: token, 'index' identifier
   * GitLab: /api/v4, PRIVATE-TOKEN header, 'iid' identifier
 - Support for real API testing when credentials are available
+
+[2026-02-04] subtask-6-3 completed:
+- Created comprehensive IPC handler verification script: apps/frontend/scripts/verify-gitea-ipc-handlers.ts
+- Verified 49 test cases across 10 categories:
+  * Handler Files: 11 handler files exist (index.ts, repository-handlers.ts, issue-handlers.ts, pull-request-handlers.ts, release-handlers.ts, investigation-handlers.ts, pr-review-handlers.ts, import-handlers.ts, utils.ts, types.ts, oauth-handlers.ts)
+  * Handler Implementation: All handlers use giteaFetch, getGiteaConfig, and encodeRepositoryPath
+  * API Endpoints: All handlers use correct /repos/ endpoints and /api/v1 prefix
+  * Error Handling: All handlers have try-catch blocks and proper error responses
+  * Handler Registration: All 9 handler exports exist in index.ts
+  * Transformation Functions: transformIssue, transformComment, transformPullRequest all defined
+  * IPC Channels: All 11 required GITEA_* channels defined in IPC_CHANNELS constant
+  * Preload API: All 6 required functions defined in gitea-api.ts
+  * Main IPC Registration: Gitea handlers properly registered in main index.ts
+  * Endpoint Patterns: All API endpoints use correct patterns (/repos/{encodedRepo}/issues, /repos/{encodedRepository}/pulls, etc.)
+- All verification tests passed (49/49)
