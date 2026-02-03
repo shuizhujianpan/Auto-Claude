@@ -200,3 +200,39 @@ PLANNING COMPLETE. Implementation will be handled by Coder Agent in separate ses
   7. Sends completion via GITEA_INVESTIGATION_COMPLETE
   8. UI displays investigation results
 
+[2026-02-04] subtask-6-5 completed:
+- Created backend PR review infrastructure:
+  * runners/gitea/runner.py - CLI entry point with review-pr and followup-review-pr commands
+  * runners/gitea/orchestrator.py - GiteaOrchestrator class with review_pr() and followup_review_pr() methods
+  * runners/gitea/services/__init__.py - Service module export
+  * runners/gitea/services/pr_review_engine.py - PRReviewEngine class for AI-powered review
+  * models.py - Already had PRReviewFinding, PRReviewResult, PRContext, GiteaRunnerConfig dataclasses
+- Frontend pr-review-handlers.ts already implemented with 11 handlers:
+  * GITEA_PR_GET_DIFF, GITEA_PR_GET_REVIEW, GITEA_PR_REVIEW, GITEA_PR_REVIEW_CANCEL
+  * GITEA_PR_FOLLOWUP_REVIEW, GITEA_PR_POST_REVIEW, GITEA_PR_POST_NOTE
+  * GITEA_PR_MERGE, GITEA_PR_ASSIGN, GITEA_PR_APPROVE, GITEA_PR_CHECK_NEW_COMMITS
+- Created comprehensive verification script: apps/frontend/scripts/verify-gitea-pr-review.ts
+- Verified 77 test cases across 8 categories:
+  * Backend: 14 tests (runner.py, orchestrator.py, services, models, client methods)
+  * IPC Handlers: 12 tests (pr-review-handlers.ts with 11 handler implementations)
+  * IPC Channels: 14 tests (all GITEA_PR_* channels defined)
+  * Types: 8 tests (GiteaPRReviewResult, GiteaPRReviewProgress, GiteaPRReviewFinding, GiteaNewCommitsCheck)
+  * Preload API: 13 tests (all PR review functions in gitea-api.ts)
+  * i18n: 6 tests (prReview and findings sections in en, fr, zh-CN)
+  * Registration: 3 tests (registerPRReviewHandlers in gitea/index.ts)
+  * Client: 7 tests (get_pull_request, get_pr_diff, get_pr_commits, get_pr_files, post_pr_comment, approve_pr, merge_pr)
+- All verification tests passed (77/77)
+- PR review flow verified:
+  1. User selects Gitea PR and clicks "Review PR"
+  2. runGiteaPRReview() sends IPC to main process
+  3. Auto-assigns current user to PR
+  4. Spawns Python subprocess: runner.py review-pr <pr_index>
+  5. Orchestrator gathers PR context (title, description, diff, commits, files)
+  6. PRReviewEngine runs AI review using Claude SDK
+  7. Results saved to .auto-claude/gitea/pr/review_<pr_index>.json
+  8. Sends progress updates via GITEA_PR_REVIEW_PROGRESS
+  9. Sends completion via GITEA_PR_REVIEW_COMPLETE
+  10. User can post findings as PR comments via postGiteaPRReview()
+  11. Follow-up review supported via followup-review-pr command
+  12. New commits check via checkGiteaPRNewCommits()
+
