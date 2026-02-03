@@ -162,3 +162,63 @@ export interface GiteaReleaseOptions {
   ref?: string; // Branch/tag to create release from
   milestones?: string[];
 }
+
+/**
+ * Options for creating a pull request
+ * Based on Gitea API: POST /repos/{owner}/{repo}/pulls
+ */
+export interface CreatePullRequestOptions {
+  title: string;
+  sourceBranch: string;
+  targetBranch: string;
+  description?: string;
+  assigneeIds?: number[];
+  labels?: number[];
+  milestone?: number;
+  draft?: boolean;
+}
+
+/**
+ * Options for updating a pull request
+ * Based on Gitea API: PATCH /repos/{owner}/{repo}/pulls/{index}
+ */
+export interface UpdatePullRequestOptions {
+  title?: string;
+  description?: string;
+  targetBranch?: string;
+  assigneeIds?: number[];
+  labels?: number[];
+  milestone?: number;
+  draft?: boolean;
+}
+
+/**
+ * Options for merging a pull request
+ * Based on Gitea API: POST /repos/{owner}/{repo}/pulls/{index}/merge
+ */
+export interface MergePullRequestOptions {
+  method?: 'merge' | 'rebase' | 'squash' | 'manually-merged';
+  title?: string; // Optional title for merge commit
+  message?: string; // Optional message for merge commit
+  deleteBranch?: boolean; // Delete branch after merge
+}
+
+/**
+ * Review states for pull request reviews
+ */
+export type PullRequestReviewState = 'APPROVED' | 'REQUEST_CHANGES' | 'COMMENT' | 'PENDING';
+
+/**
+ * Options for reviewing/approving a pull request
+ * Based on Gitea API: POST /repos/{owner}/{repo}/pulls/{index}/reviews
+ */
+export interface ReviewPullRequestOptions {
+  event: PullRequestReviewState;
+  body?: string;
+  comments?: Array<{
+    path: string;
+    position?: number;
+    new_position?: number;
+    body: string;
+  }>;
+}
