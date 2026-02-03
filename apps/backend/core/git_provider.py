@@ -3,8 +3,8 @@
 Git Provider Detection
 ======================
 
-Utility to detect git hosting provider (GitHub, GitLab, or unknown) from git remote URLs.
-Supports both SSH and HTTPS remote formats, and self-hosted GitLab instances.
+Utility to detect git hosting provider (GitHub, GitLab, Gitea, or unknown) from git remote URLs.
+Supports both SSH and HTTPS remote formats, and self-hosted GitLab and Gitea instances.
 """
 
 import re
@@ -23,6 +23,7 @@ def detect_git_provider(project_dir: str | Path, remote_name: str | None = None)
     Returns:
         'github' if GitHub remote detected
         'gitlab' if GitLab remote detected (cloud or self-hosted)
+        'gitea' if Gitea remote detected (cloud or self-hosted)
         'unknown' if no remote or unsupported provider
 
     Examples:
@@ -30,6 +31,8 @@ def detect_git_provider(project_dir: str | Path, remote_name: str | None = None)
         'github'  # for git@github.com:user/repo.git
         'gitlab'  # for git@gitlab.com:user/repo.git
         'gitlab'  # for https://gitlab.company.com/user/repo.git
+        'gitea'   # for git@gitea.com:user/repo.git
+        'gitea'   # for https://gitea.company.com/user/repo.git
         'unknown' # for no remote or other providers
     """
     try:
@@ -78,13 +81,13 @@ def detect_git_provider(project_dir: str | Path, remote_name: str | None = None)
 
 
 def _classify_hostname(hostname: str) -> str:
-    """Classify a hostname as github, gitlab, or unknown.
+    """Classify a hostname as github, gitlab, gitea, or unknown.
 
     Args:
         hostname: The git remote hostname (e.g., 'github.com', 'gitlab.example.com')
 
     Returns:
-        'github', 'gitlab', or 'unknown'
+        'github', 'gitlab', 'gitea', or 'unknown'
     """
     hostname_lower = hostname.lower()
 
@@ -110,6 +113,15 @@ def _classify_hostname(hostname: str) -> str:
         )
     ):
         return "gitlab"
+
+    # Check for Gitea (cloud and self-hosted)
+    # Match gitea.com, *.gitea.com, or domains where a segment is or starts with 'gitea'
+    if (
+        hostname_lower == "gitea.com"
+        or hostname_lower.endswith(".gitea.com")
+        or any(part == "gitea" or part.startswith("gitea-") for part in hostname_parts)
+    ):
+        return "gitea"
 
     # Unknown provider
     return "unknown"
