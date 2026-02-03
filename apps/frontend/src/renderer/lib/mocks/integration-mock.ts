@@ -11,6 +11,7 @@ export const integrationMock = {
       linearEnabled: false,
       githubEnabled: false,
       gitlabEnabled: false,
+      giteaEnabled: false,
       graphitiEnabled: false,
       enableFancyUi: true
     }
