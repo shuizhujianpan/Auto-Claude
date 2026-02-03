@@ -386,6 +386,94 @@ export const integrationMock = {
   onGitLabInvestigationComplete: () => () => {},
   onGitLabInvestigationError: () => () => {},
 
+  // Gitea Integration Operations
+  getGiteaRepositories: async () => ({
+    success: true,
+    data: []
+  }),
+
+  getGiteaIssues: async () => ({
+    success: true,
+    data: []
+  }),
+
+  getGiteaIssue: async () => ({
+    success: false,
+    error: 'Not available in browser mock'
+  }),
+
+  getGiteaIssueComments: async () => ({
+    success: true,
+    data: []
+  }),
+
+  checkGiteaConnection: async () => ({
+    success: true,
+    data: {
+      connected: false,
+      error: 'Not available in browser mock'
+    }
+  }),
+
+  investigateGiteaIssue: () => {
+    console.warn('[Browser Mock] investigateGiteaIssue called');
+  },
+
+  importGiteaIssues: async () => ({
+    success: false,
+    error: 'Not available in browser mock'
+  }),
+
+  createGiteaRelease: async () => ({
+    success: true,
+    data: {
+      url: 'https://gitea.com/example/repo/releases/tag/v1.0.0'
+    }
+  }),
+
+  // Gitea Pull Request Operations
+  getGiteaPullRequests: async () => ({
+    success: true,
+    data: []
+  }),
+
+  getGiteaPullRequest: async () => ({
+    success: false,
+    error: 'Not available in browser mock'
+  }),
+
+  createGiteaPullRequest: async () => ({
+    success: false,
+    error: 'Not available in browser mock'
+  }),
+
+  updateGiteaPullRequest: async () => ({
+    success: false,
+    error: 'Not available in browser mock'
+  }),
+
+  // Gitea PR Review Operations (AI-powered)
+  getGiteaPRReview: async () => null,
+  runGiteaPRReview: () => {},
+  runGiteaPRFollowupReview: () => {},
+  postGiteaPRReview: async () => false,
+  postGiteaPRNote: async () => false,
+  mergeGiteaPR: async () => false,
+  assignGiteaPR: async () => false,
+  approveGiteaPR: async () => false,
+  cancelGiteaPRReview: async () => false,
+  checkGiteaPRNewCommits: async () => ({ hasNewCommits: false }),
+
+  // Gitea PR Review Event Listeners
+  onGiteaPRReviewProgress: () => () => {},
+  onGiteaPRReviewComplete: () => () => {},
+  onGiteaPRReviewError: () => () => {},
+
+  // Gitea Event Listeners
+  onGiteaInvestigationProgress: () => () => {},
+  onGiteaInvestigationComplete: () => () => {},
+  onGiteaInvestigationError: () => () => {},
+
   // OAuth device code event listener (for streaming device code during auth)
   onGitHubAuthDeviceCode: () => () => {}
 };

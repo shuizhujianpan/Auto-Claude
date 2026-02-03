@@ -8,6 +8,8 @@
  * - Changelog operations
  * - Linear integration
  * - GitHub integration
+ * - GitLab integration
+ * - Gitea integration
  * - Shell operations
  */
 
@@ -18,6 +20,7 @@ import { createChangelogAPI, ChangelogAPI } from './modules/changelog-api';
 import { createLinearAPI, LinearAPI } from './modules/linear-api';
 import { createGitHubAPI, GitHubAPI } from './modules/github-api';
 import { createGitLabAPI, GitLabAPI } from './modules/gitlab-api';
+import { createGiteaAPI, GiteaAPI } from './modules/gitea-api';
 import { createShellAPI, ShellAPI } from './modules/shell-api';
 
 /**
@@ -32,6 +35,7 @@ export interface AgentAPI extends
   LinearAPI,
   GitHubAPI,
   GitLabAPI,
+  GiteaAPI,
   ShellAPI {}
 
 /**
@@ -47,6 +51,7 @@ export const createAgentAPI = (): AgentAPI => {
   const linearAPI = createLinearAPI();
   const githubAPI = createGitHubAPI();
   const gitlabAPI = createGitLabAPI();
+  const giteaAPI = createGiteaAPI();
   const shellAPI = createShellAPI();
 
   return {
@@ -71,6 +76,9 @@ export const createAgentAPI = (): AgentAPI => {
     // GitLab Integration API
     ...gitlabAPI,
 
+    // Gitea Integration API
+    ...giteaAPI,
+
     // Shell Operations API
     ...shellAPI
   };
@@ -85,5 +93,6 @@ export type {
   LinearAPI,
   GitHubAPI,
   GitLabAPI,
+  GiteaAPI,
   ShellAPI
 };
