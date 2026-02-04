@@ -3,8 +3,8 @@
 Git Provider Detection
 ======================
 
-Utility to detect git hosting provider (GitHub, GitLab, or unknown) from git remote URLs.
-Supports both SSH and HTTPS remote formats, and self-hosted GitLab instances.
+Utility to detect git hosting provider (GitHub, GitLab, Gitea, or unknown) from git remote URLs.
+Supports both SSH and HTTPS remote formats, and self-hosted GitLab and Gitea instances.
 """
 
 import re
@@ -23,6 +23,7 @@ def detect_git_provider(project_dir: str | Path, remote_name: str | None = None)
     Returns:
         'github' if GitHub remote detected
         'gitlab' if GitLab remote detected (cloud or self-hosted)
+        'gitea' if Gitea remote detected (cloud or self-hosted)
         'unknown' if no remote or unsupported provider
 
     Examples:
@@ -30,6 +31,9 @@ def detect_git_provider(project_dir: str | Path, remote_name: str | None = None)
         'github'  # for git@github.com:user/repo.git
         'gitlab'  # for git@gitlab.com:user/repo.git
         'gitlab'  # for https://gitlab.company.com/user/repo.git
+        'gitea'   # for git@gitea.com:user/repo.git
+        'gitea'   # for https://gitea.company.com/user/repo.git
+        'gitea'   # for https://my-gitea.example.com/user/repo.git
         'unknown' # for no remote or other providers
     """
     try:
@@ -78,38 +82,43 @@ def detect_git_provider(project_dir: str | Path, remote_name: str | None = None)
 
 
 def _classify_hostname(hostname: str) -> str:
-    """Classify a hostname as github, gitlab, or unknown.
+    """Classify a hostname as github, gitlab, gitea, or unknown.
 
     Args:
         hostname: The git remote hostname (e.g., 'github.com', 'gitlab.example.com')
 
     Returns:
-        'github', 'gitlab', or 'unknown'
+        'github', 'gitlab', 'gitea', or 'unknown'
     """
     hostname_lower = hostname.lower()
 
     # Check for GitHub (cloud and self-hosted/enterprise)
-    # Match github.com, *.github.com, or domains where a segment is or starts with 'github'
+    # Match github.com, *.github.com, or domains where a segment contains 'github'
     hostname_parts = hostname_lower.split(".")
     if (
         hostname_lower == "github.com"
         or hostname_lower.endswith(".github.com")
-        or any(
-            part == "github" or part.startswith("github-") for part in hostname_parts
-        )
+        or any("github" in part for part in hostname_parts)
     ):
         return "github"
 
     # Check for GitLab (cloud and self-hosted)
-    # Match gitlab.com, *.gitlab.com, or domains where a segment is or starts with 'gitlab'
+    # Match gitlab.com, *.gitlab.com, or domains where a segment contains 'gitlab'
     if (
         hostname_lower == "gitlab.com"
         or hostname_lower.endswith(".gitlab.com")
-        or any(
-            part == "gitlab" or part.startswith("gitlab-") for part in hostname_parts
-        )
+        or any("gitlab" in part for part in hostname_parts)
     ):
         return "gitlab"
+
+    # Check for Gitea (cloud and self-hosted)
+    # Match gitea.com, *.gitea.com, or domains where a segment contains 'gitea'
+    if (
+        hostname_lower == "gitea.com"
+        or hostname_lower.endswith(".gitea.com")
+        or any("gitea" in part for part in hostname_parts)
+    ):
+        return "gitea"
 
     # Unknown provider
     return "unknown"

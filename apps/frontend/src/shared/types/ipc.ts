@@ -136,7 +136,19 @@ import type {
   GitLabInvestigationStatus,
   GitLabMRReviewResult,
   GitLabMRReviewProgress,
-  GitLabNewCommitsCheck
+  GitLabNewCommitsCheck,
+  GiteaRepository,
+  GiteaIssue,
+  GiteaPullRequest,
+  GiteaComment,
+  GiteaOrganization,
+  GiteaSyncStatus,
+  GiteaImportResult,
+  GiteaInvestigationResult,
+  GiteaInvestigationStatus,
+  GiteaPRReviewResult,
+  GiteaPRReviewProgress,
+  GiteaNewCommitsCheck
 } from './integrations';
 import type { APIProfile, ProfilesFile, TestConnectionResult, DiscoverModelsResult } from './profile';
 
@@ -607,6 +619,84 @@ export interface ElectronAPI {
   ) => () => void;
   onGitLabInvestigationError: (
     callback: (projectId: string, error: string) => void
+  ) => () => void;
+
+  // Gitea integration operations
+  getGiteaRepositories: (owner: string) => Promise<IPCResult<GiteaRepository[]>>;
+  getGiteaIssues: (repoOwner: string, repoName: string, state?: 'open' | 'closed' | 'all') => Promise<IPCResult<GiteaIssue[]>>;
+  getGiteaIssue: (repoOwner: string, repoName: string, issueNumber: number) => Promise<IPCResult<GiteaIssue>>;
+  getGiteaIssueComments: (repoOwner: string, repoName: string, issueNumber: number) => Promise<IPCResult<GiteaComment[]>>;
+  checkGiteaConnection: (repoOwner: string, repoName: string) => Promise<IPCResult<GiteaSyncStatus>>;
+  investigateGiteaIssue: (repoOwner: string, repoName: string, issueNumber: number) => void;
+  importGiteaIssues: (repoOwner: string, repoName: string, issueNumbers: number[]) => Promise<IPCResult<GiteaImportResult>>;
+  createGiteaRelease: (
+    repoOwner: string,
+    repoName: string,
+    tagName: string,
+    releaseNotes: string,
+    options?: { body?: string; targetCommitish?: string }
+  ) => Promise<IPCResult<{ url: string }>>;
+
+  // Gitea Pull Request operations
+  getGiteaPullRequests: (repoOwner: string, repoName: string, state?: 'open' | 'closed' | 'all') => Promise<IPCResult<GiteaPullRequest[]>>;
+  getGiteaPullRequest: (repoOwner: string, repoName: string, prNumber: number) => Promise<IPCResult<GiteaPullRequest>>;
+  createGiteaPullRequest: (
+    repoOwner: string,
+    repoName: string,
+    options: {
+      title: string;
+      body?: string;
+      head: string;
+      base: string;
+      labels?: string[];
+      assignees?: string[];
+    }
+  ) => Promise<IPCResult<GiteaPullRequest>>;
+  updateGiteaPullRequest: (
+    repoOwner: string,
+    repoName: string,
+    prNumber: number,
+    updates: {
+      title?: string;
+      body?: string;
+      base?: string;
+      labels?: string[];
+      assignees?: string[];
+    }
+  ) => Promise<IPCResult<GiteaPullRequest>>;
+
+  // Gitea PR Review operations (AI-powered)
+  getGiteaPRReview: (repoOwner: string, repoName: string, prNumber: number) => Promise<GiteaPRReviewResult | null>;
+  runGiteaPRReview: (repoOwner: string, repoName: string, prNumber: number) => void;
+  runGiteaPRFollowupReview: (repoOwner: string, repoName: string, prNumber: number) => void;
+  postGiteaPRReview: (repoOwner: string, repoName: string, prNumber: number, selectedFindingIds?: string[]) => Promise<boolean>;
+  postGiteaPRNote: (repoOwner: string, repoName: string, prNumber: number, body: string) => Promise<boolean>;
+  mergeGiteaPR: (repoOwner: string, repoName: string, prNumber: number, mergeMethod?: 'merge' | 'squash' | 'rebase') => Promise<boolean>;
+  assignGiteaPR: (repoOwner: string, repoName: string, prNumber: number, usernames: string[]) => Promise<boolean>;
+  approveGiteaPR: (repoOwner: string, repoName: string, prNumber: number) => Promise<boolean>;
+  cancelGiteaPRReview: (repoOwner: string, repoName: string, prNumber: number) => Promise<boolean>;
+  checkGiteaPRNewCommits: (repoOwner: string, repoName: string, prNumber: number) => Promise<GiteaNewCommitsCheck>;
+
+  // Gitea PR Review event listeners
+  onGiteaPRReviewProgress: (
+    callback: (repoOwner: string, repoName: string, progress: GiteaPRReviewProgress) => void
+  ) => () => void;
+  onGiteaPRReviewComplete: (
+    callback: (repoOwner: string, repoName: string, result: GiteaPRReviewResult) => void
+  ) => () => void;
+  onGiteaPRReviewError: (
+    callback: (repoOwner: string, repoName: string, data: { prNumber: number; error: string }) => void
+  ) => () => void;
+
+  // Gitea event listeners
+  onGiteaInvestigationProgress: (
+    callback: (repoOwner: string, repoName: string, status: GiteaInvestigationStatus) => void
+  ) => () => void;
+  onGiteaInvestigationComplete: (
+    callback: (repoOwner: string, repoName: string, result: GiteaInvestigationResult) => void
+  ) => () => void;
+  onGiteaInvestigationError: (
+    callback: (repoOwner: string, repoName: string, error: string) => void
   ) => () => void;
 
   // Release operations

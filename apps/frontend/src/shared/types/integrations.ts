@@ -478,3 +478,350 @@ export interface RoadmapProviderConfig {
  * Canny-specific status values
  */
 export type CannyStatus = 'open' | 'under review' | 'planned' | 'in progress' | 'complete' | 'closed';
+
+// ============================================
+// Gitea Integration Types
+// ============================================
+
+export interface GiteaRepository {
+  id: number;
+  name: string;
+  fullName: string; // owner/repo
+  description?: string;
+  htmlUrl: string;
+  cloneUrl: string;
+  defaultBranch: string;
+  private: boolean;
+  empty: boolean;
+  mirror: boolean;
+  size: number;
+  owner: {
+    id: number;
+    login: string;
+    fullName?: string;
+    avatarUrl?: string;
+  };
+}
+
+export interface GiteaIssue {
+  id: number;
+  number: number;
+  title: string;
+  body?: string;
+  state: 'open' | 'closed';
+  labels: Array<{
+    id: number;
+    name: string;
+    color: string;
+    description?: string;
+  }>;
+  assignees: Array<{
+    id: number;
+    login: string;
+    fullName?: string;
+    avatarUrl?: string;
+  }>;
+  author: {
+    id: number;
+    login: string;
+    fullName?: string;
+    avatarUrl?: string;
+  };
+  milestone?: {
+    id: number;
+    title: string;
+    state: 'open' | 'closed';
+  };
+  createdAt: string;
+  updatedAt: string;
+  closedAt?: string;
+  commentsCount: number;
+  url: string;
+  htmlUrl: string;
+  repoFullName: string;
+  repository: GiteaRepository;
+}
+
+export interface GiteaPullRequest {
+  id: number;
+  number: number;
+  title: string;
+  body?: string;
+  state: 'open' | 'closed' | 'merged';
+  merged?: boolean;
+  head: {
+    label: string; // e.g., "feature-branch:feature"
+    ref: string;
+    sha: string;
+    repo: GiteaRepository;
+  };
+  base: {
+    label: string; // e.g., "main:main"
+    ref: string;
+    sha: string;
+    repo: GiteaRepository;
+  };
+  author: {
+    id: number;
+    login: string;
+    fullName?: string;
+    avatarUrl?: string;
+  };
+  assignees: Array<{
+    id: number;
+    login: string;
+    fullName?: string;
+    avatarUrl?: string;
+  }>;
+  labels: Array<{
+    id: number;
+    name: string;
+    color: string;
+    description?: string;
+  }>;
+  milestone?: {
+    id: number;
+    title: string;
+    state: 'open' | 'closed';
+  };
+  mergeable: boolean;
+  mergedAt?: string;
+  mergedBy?: {
+    id: number;
+    login: string;
+    avatarUrl?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  closedAt?: string;
+  htmlUrl: string;
+  diffUrl: string;
+  patchUrl: string;
+  repoFullName: string;
+}
+
+export interface GiteaComment {
+  id: number;
+  body: string;
+  author: {
+    id: number;
+    login: string;
+    fullName?: string;
+    avatarUrl?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  issue?: {
+    id: number;
+    number: number;
+    title: string;
+  };
+  pullRequest?: {
+    id: number;
+    number: number;
+    title: string;
+  };
+}
+
+export interface GiteaOrganization {
+  id: number;
+  name: string;
+  username: string;
+  fullName?: string;
+  avatarUrl?: string;
+  location?: string;
+  website?: string;
+  description?: string;
+}
+
+export interface GiteaSyncStatus {
+  connected: boolean;
+  instanceUrl?: string;
+  repoFullName?: string;
+  repoDescription?: string;
+  issueCount?: number;
+  lastSyncedAt?: string;
+  error?: string;
+}
+
+export interface GiteaImportResult {
+  success: boolean;
+  imported: number;
+  failed: number;
+  errors?: string[];
+  tasks?: import('./task').Task[];
+}
+
+export interface GiteaInvestigationResult {
+  success: boolean;
+  issueNumber: number;
+  analysis: {
+    summary: string;
+    proposedSolution: string;
+    affectedFiles: string[];
+    estimatedComplexity: 'simple' | 'standard' | 'complex';
+    acceptanceCriteria: string[];
+  };
+  taskId?: string;
+  error?: string;
+}
+
+export interface GiteaInvestigationStatus {
+  phase: 'idle' | 'fetching' | 'analyzing' | 'creating_task' | 'complete' | 'error';
+  issueNumber?: number;
+  progress: number;
+  message: string;
+  error?: string;
+}
+
+// ============================================
+// Gitea PR Review Types
+// ============================================
+
+export interface GiteaPRReviewFinding {
+  id: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  category: 'security' | 'quality' | 'style' | 'test' | 'docs' | 'pattern' | 'performance';
+  title: string;
+  description: string;
+  file: string;
+  line: number;
+  endLine?: number;
+  suggestedFix?: string;
+  fixable: boolean;
+}
+
+export interface GiteaPRReviewResult {
+  prNumber: number;
+  repo: string;
+  success: boolean;
+  findings: GiteaPRReviewFinding[];
+  summary: string;
+  overallStatus: 'approve' | 'request_changes' | 'comment';
+  reviewedAt: string;
+  reviewedCommitSha?: string;
+  isFollowupReview?: boolean;
+  previousReviewId?: number;
+  resolvedFindings?: string[];
+  unresolvedFindings?: string[];
+  newFindingsSinceLastReview?: string[];
+  hasPostedFindings?: boolean;
+  postedFindingIds?: string[];
+}
+
+export interface GiteaPRReviewProgress {
+  phase: 'fetching' | 'analyzing' | 'generating' | 'posting' | 'complete';
+  prNumber: number;
+  progress: number;
+  message: string;
+}
+
+export interface GiteaNewCommitsCheck {
+  hasNewCommits: boolean;
+  currentSha?: string;
+  reviewedSha?: string;
+  newCommitCount?: number;
+}
+
+// ============================================
+// Gitea Auto-Fix Types
+// ============================================
+
+export interface GiteaAutoFixConfig {
+  enabled: boolean;
+  labels: string[];
+  requireHumanApproval: boolean;
+  model: string;
+  thinkingLevel: string;
+}
+
+export interface GiteaAutoFixQueueItem {
+  issueNumber: number;
+  repo: string;
+  status: 'pending' | 'analyzing' | 'creating_spec' | 'building' | 'qa_review' | 'pr_created' | 'completed' | 'failed';
+  specId?: string;
+  prNumber?: number;
+  createdAt: string;
+  updatedAt: string;
+  error?: string;
+}
+
+export interface GiteaIssueBatch {
+  id: string;
+  issues: Array<{ number: number; title: string; similarity: number }>;
+  commonThemes: string[];
+  confidence: number;
+  reasoning: string;
+}
+
+export interface GiteaBatchProgress {
+  phase: 'analyzing' | 'grouping' | 'complete';
+  progress: number;
+  message: string;
+  issuesAnalyzed?: number;
+  totalIssues?: number;
+}
+
+export interface GiteaAutoFixProgress {
+  phase: 'checking' | 'fetching' | 'analyzing' | 'batching' | 'creating_spec' | 'building' | 'qa_review' | 'creating_pr' | 'complete';
+  issueNumber: number;
+  progress: number;
+  message: string;
+}
+
+export interface GiteaAnalyzePreviewResult {
+  success: boolean;
+  totalIssues: number;
+  analyzedIssues: number;
+  alreadyBatched: number;
+  proposedBatches: Array<{
+    primaryIssue: number;
+    issues: Array<{
+      number: number;
+      title: string;
+      labels: string[];
+      similarityToPrimary: number;
+    }>;
+    issueCount: number;
+    commonThemes: string[];
+    validated: boolean;
+    confidence: number;
+    reasoning: string;
+    theme: string;
+  }>;
+  singleIssues: Array<{
+    number: number;
+    title: string;
+    labels: string[];
+  }>;
+  message: string;
+  error?: string;
+}
+
+// ============================================
+// Gitea Triage Types
+// ============================================
+
+export type GiteaTriageCategory = 'bug' | 'feature' | 'documentation' | 'question' | 'duplicate' | 'spam' | 'feature_creep';
+
+export interface GiteaTriageConfig {
+  enabled: boolean;
+  duplicateThreshold: number;
+  spamThreshold: number;
+  featureCreepThreshold: number;
+  enableComments: boolean;
+}
+
+export interface GiteaTriageResult {
+  issueNumber: number;
+  category: GiteaTriageCategory;
+  confidence: number;
+  labelsToAdd: string[];
+  labelsToRemove: string[];
+  duplicateOf?: number;
+  spamReason?: string;
+  featureCreepReason?: string;
+  priority: 'high' | 'medium' | 'low';
+  comment?: string;
+  triagedAt: string;
+}

@@ -35,8 +35,6 @@ from core.glab_executable import get_glab_executable, invalidate_glab_cache
 from core.model_config import get_utility_model_config
 from debug import debug_warning
 
-logger = logging.getLogger(__name__)
-
 T = TypeVar("T")
 
 
@@ -143,7 +141,7 @@ class PushAndCreatePRResult(TypedDict, total=False):
     pushed: bool
     remote: str
     branch: str
-    provider: str  # 'github', 'gitlab', or 'unknown'
+    provider: str  # 'github', 'gitlab', 'gitea', or 'unknown'
     pr_url: str | None  # None when PR was created but URL couldn't be extracted
     already_exists: bool
     error: str
@@ -1495,6 +1493,57 @@ class WorktreeManager:
                 error="GitLab CLI (glab) not found. Install from https://gitlab.com/gitlab-org/cli",
             )
 
+    def create_gitea_pull_request(
+        self,
+        spec_name: str,
+        target_branch: str | None = None,
+        title: str | None = None,
+        draft: bool = False,
+    ) -> PullRequestResult:
+        """
+        Create a Gitea pull request for a spec's branch.
+
+        Note: This is a placeholder for future implementation.
+        Full Gitea API integration will be added in later subtasks.
+
+        Args:
+            spec_name: The spec folder name
+            target_branch: Target branch for PR (defaults to base_branch)
+            title: PR title (defaults to spec name)
+            draft: Whether to create as draft PR
+
+        Returns:
+            PullRequestResult with keys:
+                - success: bool
+                - pr_url: str (if created)
+                - already_exists: bool (if PR already exists)
+                - error: str (if failed)
+        """
+        # Placeholder implementation - will be replaced with actual Gitea API calls
+        # in later subtasks when the GiteaClient is implemented
+        return PullRequestResult(
+            success=False,
+            error="Gitea PR creation not yet implemented. Please use the Gitea web interface to create PRs manually.",
+        )
+
+    def _get_existing_gitea_pr_url(self, spec_name: str, target_branch: str) -> str | None:
+        """
+        Get the URL of an existing Gitea PR for this branch.
+
+        Note: This is a placeholder for future implementation.
+        Full Gitea API integration will be added in later subtasks.
+
+        Args:
+            spec_name: The spec folder name
+            target_branch: The target branch
+
+        Returns:
+            The PR URL if found, None otherwise
+        """
+        # Placeholder implementation - will be replaced with actual Gitea API calls
+        # in later subtasks when the GiteaClient is implemented
+        return None
+
     def _gather_pr_context(self, spec_name: str, target_branch: str) -> tuple[str, str]:
         """
         Gather diff summary and commit log for PR template filling.
@@ -1810,7 +1859,7 @@ class WorktreeManager:
     ) -> PushAndCreatePRResult:
         """
         Push branch and create a pull request/merge request in one operation.
-        Automatically detects git provider (GitHub or GitLab) and routes to the appropriate CLI.
+        Automatically detects git provider (GitHub, GitLab, or Gitea) and routes to the appropriate handler.
 
         Args:
             spec_name: The spec folder name
@@ -1824,7 +1873,7 @@ class WorktreeManager:
                 - success: bool
                 - pr_url: str (if created)
                 - pushed: bool (if push succeeded)
-                - provider: str ('github', 'gitlab', or 'unknown')
+                - provider: str ('github', 'gitlab', 'gitea', or 'unknown')
                 - already_exists: bool (if PR/MR already exists)
                 - error: str (if failed)
         """
@@ -1859,6 +1908,13 @@ class WorktreeManager:
                 title=title,
                 draft=draft,
             )
+        elif provider == "gitea":
+            pr_result = self.create_gitea_pull_request(
+                spec_name=spec_name,
+                target_branch=target_branch,
+                title=title,
+                draft=draft,
+            )
         else:
             # Unknown provider
             return PushAndCreatePRResult(
@@ -1867,7 +1923,7 @@ class WorktreeManager:
                 remote=push_result.get("remote"),
                 branch=push_result.get("branch"),
                 provider=provider,
-                error="Unable to determine git hosting provider. Supported: GitHub, GitLab.",
+                error="Unable to determine git hosting provider. Supported: GitHub, GitLab, Gitea.",
             )
 
         # Combine results

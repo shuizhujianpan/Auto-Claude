@@ -360,6 +360,83 @@ export const IPC_CHANNELS = {
   GITLAB_TRIAGE_COMPLETE: 'gitlab:triage:complete',
   GITLAB_TRIAGE_ERROR: 'gitlab:triage:error',
 
+  // Gitea integration
+  GITEA_GET_REPOSITORIES: 'gitea:getRepositories',
+  GITEA_GET_ISSUES: 'gitea:getIssues',
+  GITEA_GET_ISSUE: 'gitea:getIssue',
+  GITEA_GET_ISSUE_COMMENTS: 'gitea:getIssueComments',
+  GITEA_CHECK_CONNECTION: 'gitea:checkConnection',
+  GITEA_INVESTIGATE_ISSUE: 'gitea:investigateIssue',
+  GITEA_IMPORT_ISSUES: 'gitea:importIssues',
+  GITEA_CREATE_RELEASE: 'gitea:createRelease',
+
+  // Gitea Pull Requests (equivalent to GitHub PRs)
+  GITEA_GET_PULL_REQUESTS: 'gitea:getPullRequests',
+  GITEA_GET_PULL_REQUEST: 'gitea:getPullRequest',
+  GITEA_CREATE_PULL_REQUEST: 'gitea:createPullRequest',
+  GITEA_UPDATE_PULL_REQUEST: 'gitea:updatePullRequest',
+
+  // Gitea PR Review operations
+  GITEA_PR_GET_DIFF: 'gitea:pr:getDiff',
+  GITEA_PR_REVIEW: 'gitea:pr:review',
+  GITEA_PR_REVIEW_CANCEL: 'gitea:pr:reviewCancel',
+  GITEA_PR_GET_REVIEW: 'gitea:pr:getReview',
+  GITEA_PR_FOLLOWUP_REVIEW: 'gitea:pr:followupReview',
+  GITEA_PR_POST_REVIEW: 'gitea:pr:postReview',
+  GITEA_PR_POST_NOTE: 'gitea:pr:postNote',
+  GITEA_PR_MERGE: 'gitea:pr:merge',
+  GITEA_PR_ASSIGN: 'gitea:pr:assign',
+  GITEA_PR_APPROVE: 'gitea:pr:approve',
+  GITEA_PR_CHECK_NEW_COMMITS: 'gitea:pr:checkNewCommits',
+
+  // Gitea PR Review events (main -> renderer)
+  GITEA_PR_REVIEW_PROGRESS: 'gitea:pr:reviewProgress',
+  GITEA_PR_REVIEW_COMPLETE: 'gitea:pr:reviewComplete',
+  GITEA_PR_REVIEW_ERROR: 'gitea:pr:reviewError',
+
+  // Gitea events (main -> renderer)
+  GITEA_INVESTIGATION_PROGRESS: 'gitea:investigationProgress',
+  GITEA_INVESTIGATION_COMPLETE: 'gitea:investigationComplete',
+  GITEA_INVESTIGATION_ERROR: 'gitea:investigationError',
+
+  // Gitea Auto-Fix operations
+  GITEA_AUTOFIX_START: 'gitea:autofix:start',
+  GITEA_AUTOFIX_STOP: 'gitea:autofix:stop',
+  GITEA_AUTOFIX_GET_QUEUE: 'gitea:autofix:getQueue',
+  GITEA_AUTOFIX_CHECK_LABELS: 'gitea:autofix:checkLabels',
+  GITEA_AUTOFIX_CHECK_NEW: 'gitea:autofix:checkNew',
+  GITEA_AUTOFIX_GET_CONFIG: 'gitea:autofix:getConfig',
+  GITEA_AUTOFIX_SAVE_CONFIG: 'gitea:autofix:saveConfig',
+  GITEA_AUTOFIX_BATCH: 'gitea:autofix:batch',
+  GITEA_AUTOFIX_GET_BATCHES: 'gitea:autofix:getBatches',
+
+  // Gitea Auto-Fix events (main -> renderer)
+  GITEA_AUTOFIX_PROGRESS: 'gitea:autofix:progress',
+  GITEA_AUTOFIX_COMPLETE: 'gitea:autofix:complete',
+  GITEA_AUTOFIX_ERROR: 'gitea:autofix:error',
+  GITEA_AUTOFIX_BATCH_PROGRESS: 'gitea:autofix:batchProgress',
+  GITEA_AUTOFIX_BATCH_COMPLETE: 'gitea:autofix:batchComplete',
+  GITEA_AUTOFIX_BATCH_ERROR: 'gitea:autofix:batchError',
+
+  // Gitea Issue Analysis Preview (proactive batch workflow)
+  GITEA_AUTOFIX_ANALYZE_PREVIEW: 'gitea:autofix:analyzePreview',
+  GITEA_AUTOFIX_ANALYZE_PREVIEW_PROGRESS: 'gitea:autofix:analyzePreviewProgress',
+  GITEA_AUTOFIX_ANALYZE_PREVIEW_COMPLETE: 'gitea:autofix:analyzePreviewComplete',
+  GITEA_AUTOFIX_ANALYZE_PREVIEW_ERROR: 'gitea:autofix:analyzePreviewError',
+  GITEA_AUTOFIX_APPROVE_BATCHES: 'gitea:autofix:approveBatches',
+
+  // Gitea Issue Triage operations
+  GITEA_TRIAGE_RUN: 'gitea:triage:run',
+  GITEA_TRIAGE_GET_RESULTS: 'gitea:triage:getResults',
+  GITEA_TRIAGE_APPLY_LABELS: 'gitea:triage:applyLabels',
+  GITEA_TRIAGE_GET_CONFIG: 'gitea:triage:getConfig',
+  GITEA_TRIAGE_SAVE_CONFIG: 'gitea:triage:saveConfig',
+
+  // Gitea Issue Triage events (main -> renderer)
+  GITEA_TRIAGE_PROGRESS: 'gitea:triage:progress',
+  GITEA_TRIAGE_COMPLETE: 'gitea:triage:complete',
+  GITEA_TRIAGE_ERROR: 'gitea:triage:error',
+
   // GitHub Auto-Fix operations
   GITHUB_AUTOFIX_START: 'github:autofix:start',
   GITHUB_AUTOFIX_STOP: 'github:autofix:stop',

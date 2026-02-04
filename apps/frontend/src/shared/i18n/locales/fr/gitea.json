@@ -1,0 +1,221 @@
+{
+  "title": "Issues Gitea",
+  "states": {
+    "opened": "Ouvert",
+    "closed": "Fermé"
+  },
+  "complexity": {
+    "simple": "Simple",
+    "standard": "Standard",
+    "complex": "Complexe"
+  },
+  "header": {
+    "open": "ouvert",
+    "searchPlaceholder": "Rechercher des issues..."
+  },
+  "filters": {
+    "opened": "Ouvertes",
+    "closed": "Fermées",
+    "all": "Toutes"
+  },
+  "empty": {
+    "noMatch": "Aucune issue ne correspond à votre recherche",
+    "selectIssue": "Sélectionnez une issue pour voir les détails"
+  },
+  "notConnected": {
+    "title": "Gitea non connecté",
+    "description": "Configurez votre token Gitea et le dépôt dans les paramètres du projet pour synchroniser les issues.",
+    "openSettings": "Ouvrir les paramètres"
+  },
+  "detail": {
+    "notes": "notes",
+    "viewTask": "Voir la tâche",
+    "createTask": "Créer une tâche",
+    "taskLinked": "Tâche liée",
+    "taskId": "ID de tâche",
+    "description": "Description",
+    "noDescription": "Aucune description fournie.",
+    "assignees": "Assignés",
+    "milestone": "Jalon"
+  },
+  "investigation": {
+    "title": "Créer une tâche à partir de l'issue",
+    "issuePrefix": "Issue",
+    "description": "Créez une tâche à partir de cette issue Gitea. La tâche sera ajoutée à votre tableau Kanban dans la colonne Backlog.",
+    "selectNotes": "Sélectionner les notes à inclure",
+    "deselectAll": "Tout désélectionner",
+    "selectAll": "Tout sélectionner",
+    "willInclude": "La tâche inclura :",
+    "includeTitle": "Titre et description de l'issue",
+    "includeLink": "Lien vers l'issue Gitea",
+    "includeLabels": "Labels et métadonnées de l'issue",
+    "noNotes": "Pas de notes (cette issue n'a pas de notes)",
+    "failedToLoadNotes": "Échec du chargement des notes",
+    "taskCreated": "Tâche créée ! Consultez-la dans votre tableau Kanban.",
+    "creating": "Création...",
+    "cancel": "Annuler",
+    "done": "Terminé",
+    "close": "Fermer"
+  },
+  "settings": {
+    "enableIssues": "Activer les issues Gitea",
+    "enableIssuesDescription": "Synchroniser les issues depuis Gitea et créer des tâches automatiquement",
+    "instance": "Instance Gitea",
+    "instanceDescription": "Utilisez https://gitea.com ou l'URL de votre instance auto-hébergée",
+    "connectedVia": "Connecté via Gitea",
+    "authenticatedAs": "Authentifié en tant que",
+    "useDifferentToken": "Utiliser un autre token",
+    "authentication": "Authentification Gitea",
+    "useManualToken": "Utiliser un token manuel",
+    "authenticating": "Authentification...",
+    "browserWindow": "Une fenêtre de navigateur devrait s'ouvrir pour vous connecter.",
+    "personalAccessToken": "Token d'accès personnel",
+    "useOAuth": "Utiliser OAuth à la place",
+    "tokenScope": "Créez un token avec",
+    "scopeApi": "api",
+    "scopeFrom": "scope depuis",
+    "giteaSettings": "Paramètres Gitea",
+    "project": "Dépôt",
+    "enterManually": "Saisir manuellement",
+    "loadingProjects": "Chargement des dépôts...",
+    "selectProject": "Sélectionner un dépôt...",
+    "searchProjects": "Rechercher des dépôts...",
+    "noMatchingProjects": "Aucun dépôt correspondant",
+    "noProjectsFound": "Aucun dépôt trouvé",
+    "selected": "Sélectionné",
+    "projectFormat": "Format :",
+    "projectFormatExample": "(ex: proprietaire/depot)",
+    "connectionStatus": "État de la connexion",
+    "checking": "Vérification...",
+    "connectedTo": "Connecté à",
+    "notConnected": "Non connecté",
+    "issuesAvailable": "Issues disponibles",
+    "issuesAvailableDescription": "Accédez aux issues Gitea depuis la barre latérale pour les consulter, investiguer et créer des tâches.",
+    "defaultBranch": "Branche par défaut",
+    "defaultBranchDescription": "Branche de base pour créer les worktrees de tâches",
+    "loadingBranches": "Chargement des branches...",
+    "autoDetect": "Auto-détection (main/master)",
+    "searchBranches": "Rechercher des branches...",
+    "noMatchingBranches": "Aucune branche correspondante",
+    "noBranchesFound": "Aucune branche trouvée",
+    "branchFromNote": "Toutes les nouvelles tâches partiront de",
+    "autoSyncOnLoad": "Sync auto au chargement",
+    "autoSyncDescription": "Récupérer automatiquement les issues au chargement du projet"
+  },
+  "pullRequests": {
+    "title": "Pull Requests Gitea",
+    "newPR": "Nouvelle Pull Request",
+    "selectPR": "Sélectionnez une pull request pour voir les détails",
+    "states": {
+      "opened": "Ouverte",
+      "closed": "Fermée",
+      "merged": "Fusionnée"
+    },
+    "filters": {
+      "opened": "Ouvertes",
+      "closed": "Fermées",
+      "merged": "Fusionnées",
+      "all": "Toutes"
+    }
+  },
+  "createPR": {
+    "title": "Créer une Pull Request",
+    "description": "Créer une nouvelle pull request dans Gitea",
+    "fields": {
+      "title": "Titre",
+      "sourceBranch": "Branche source",
+      "targetBranch": "Branche cible",
+      "description": "Description (facultatif)"
+    },
+    "placeholders": {
+      "title": "Titre de la pull request",
+      "sourceBranch": "feature/ma-fonctionnalité",
+      "targetBranch": "main",
+      "description": "Décrivez les changements dans cette pull request..."
+    },
+    "submit": "Créer une Pull Request",
+    "creating": "Création...",
+    "validation": {
+      "requiredFields": "Le titre, la branche source et la branche cible sont requis"
+    },
+    "errors": {
+      "createFailed": "Échec de la création de la pull request"
+    }
+  },
+  "prReview": {
+    "runReview": "Lancer la revue IA",
+    "reviewing": "Analyse en cours...",
+    "followupReview": "Revue de suivi",
+    "newCommits": "nouveau commit",
+    "newCommitsPlural": "nouveaux commits",
+    "cancel": "Annuler",
+    "postFindings": "Publier les résultats",
+    "posting": "Publication...",
+    "postedTo": "Publié sur Gitea",
+    "approve": "Approuver",
+    "approving": "Approbation...",
+    "merge": "Fusionner la PR",
+    "merging": "Fusion...",
+    "aiReviewResult": "Résultat de la revue IA",
+    "followupReviewResult": "Revue de suivi",
+    "description": "Description",
+    "noDescription": "Aucune description fournie.",
+    "labels": "Labels",
+    "status": {
+      "notReviewed": "Non analysée",
+      "notReviewedDesc": "Lancez une revue IA pour analyser cette PR",
+      "reviewComplete": "Revue terminée",
+      "reviewCompleteDesc": "problème(s) trouvé(s). Sélectionnez et publiez sur Gitea.",
+      "waitingForChanges": "En attente de modifications",
+      "waitingForChangesDesc": "résultat(s) publié(s). En attente des corrections du contributeur.",
+      "readyToMerge": "Prête à fusionner",
+      "readyToMergeDesc": "Aucun problème bloquant. Cette PR peut être fusionnée.",
+      "needsAttention": "Attention requise",
+      "needsAttentionDesc": "résultat(s) à publier sur Gitea.",
+      "readyForFollowup": "Prête pour suivi",
+      "readyForFollowupDesc": "depuis la revue. Lancez un suivi pour vérifier si les problèmes sont résolus.",
+      "blockingIssues": "Problèmes bloquants",
+      "blockingIssuesDesc": "problème(s) bloquant(s) encore ouvert(s)."
+    },
+    "overallStatus": {
+      "approve": "Approuver",
+      "requestChanges": "Modifications demandées",
+      "comment": "Commentaire"
+    },
+    "resolution": {
+      "resolved": "résolu(s)",
+      "stillOpen": "encore ouvert(s)",
+      "newIssue": "nouveau problème",
+      "newIssues": "nouveaux problèmes"
+    }
+  },
+  "findings": {
+    "summary": "sélectionné(s)",
+    "selectCriticalHigh": "Sélectionner Bloquant/Requis",
+    "selectAll": "Tout sélectionner",
+    "clear": "Effacer",
+    "noIssues": "Aucun problème trouvé ! Le code est bon.",
+    "suggestedFix": "Correction suggérée :",
+    "posted": "Publié",
+    "severity": {
+      "critical": "Bloquant",
+      "criticalDesc": "À corriger",
+      "high": "Requis",
+      "highDesc": "À traiter",
+      "medium": "Recommandé",
+      "mediumDesc": "Améliore la qualité",
+      "low": "Suggestion",
+      "lowDesc": "À considérer"
+    },
+    "category": {
+      "security": "Sécurité",
+      "quality": "Qualité",
+      "style": "Style",
+      "test": "Test",
+      "docs": "Documentation",
+      "pattern": "Pattern",
+      "performance": "Performance",
+      "logic": "Logique"
+    }
+  }
+}
