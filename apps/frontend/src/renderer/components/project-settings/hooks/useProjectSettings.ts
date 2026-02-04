@@ -13,7 +13,8 @@ import type {
   ProjectEnvConfig,
   LinearSyncStatus,
   GitHubSyncStatus,
-  GitLabSyncStatus
+  GitLabSyncStatus,
+  GiteaSyncStatus
 } from '../../../../shared/types';
 
 export interface UseProjectSettingsReturn {
@@ -60,6 +61,12 @@ export interface UseProjectSettingsReturn {
   setShowGitLabToken: React.Dispatch<React.SetStateAction<boolean>>;
   gitLabConnectionStatus: GitLabSyncStatus | null;
   isCheckingGitLab: boolean;
+
+  // Gitea state
+  showGiteaToken: boolean;
+  setShowGiteaToken: React.Dispatch<React.SetStateAction<boolean>>;
+  giteaConnectionStatus: GiteaSyncStatus | null;
+  isCheckingGitea: boolean;
 
   // Claude auth state
   isCheckingClaudeAuth: boolean;
@@ -124,6 +131,11 @@ export function useProjectSettings(
   const [showGitLabToken, setShowGitLabToken] = useState(false);
   const [gitLabConnectionStatus, setGitLabConnectionStatus] = useState<GitLabSyncStatus | null>(null);
   const [isCheckingGitLab, setIsCheckingGitLab] = useState(false);
+
+  // Gitea state
+  const [showGiteaToken, setShowGiteaToken] = useState(false);
+  const [giteaConnectionStatus, setGiteaConnectionStatus] = useState<GiteaSyncStatus | null>(null);
+  const [isCheckingGitea, setIsCheckingGitea] = useState(false);
 
   // Claude auth state
   const [isCheckingClaudeAuth, setIsCheckingClaudeAuth] = useState(false);
@@ -281,6 +293,39 @@ export function useProjectSettings(
     }
   }, [envConfig?.gitlabEnabled, envConfig?.gitlabToken, envConfig?.gitlabProject, project.id]);
 
+  // Check Gitea connection when token/repo changes
+  useEffect(() => {
+    const checkGiteaConnection = async () => {
+      if (!envConfig?.giteaEnabled || !envConfig.giteaToken || !envConfig.giteaRepo) {
+        setGiteaConnectionStatus(null);
+        return;
+      }
+
+      setIsCheckingGitea(true);
+      try {
+        // Parse giteaRepo (format: "owner/repo") to get repoOwner and repoName
+        const [repoOwner, repoName] = envConfig.giteaRepo.split('/');
+        if (!repoOwner || !repoName) {
+          setGiteaConnectionStatus({ connected: false, error: 'Invalid repository format. Expected owner/repo.' });
+          return;
+        }
+
+        const status = await window.electronAPI.checkGiteaConnection(repoOwner, repoName);
+        if (status.success && status.data) {
+          setGiteaConnectionStatus(status.data);
+        }
+      } catch {
+        setGiteaConnectionStatus({ connected: false, error: 'Failed to check connection' });
+      } finally {
+        setIsCheckingGitea(false);
+      }
+    };
+
+    if (envConfig?.giteaEnabled && envConfig.giteaToken && envConfig.giteaRepo) {
+      checkGiteaConnection();
+    }
+  }, [envConfig?.giteaEnabled, envConfig?.giteaToken, envConfig?.giteaRepo]);
+
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
@@ -428,6 +473,10 @@ export function useProjectSettings(
     setShowGitLabToken,
     gitLabConnectionStatus,
     isCheckingGitLab,
+    showGiteaToken,
+    setShowGiteaToken,
+    giteaConnectionStatus,
+    isCheckingGitea,
     isCheckingClaudeAuth,
     claudeAuthStatus,
     setClaudeAuthStatus,
