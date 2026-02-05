@@ -10,7 +10,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 from analysis.analyzers import analyze_project
-from core.task_event import TaskEventEmitter
 from core.workspace.models import SpecNumberLock
 from phase_config import get_thinking_budget
 from prompts_pkg.project_context import should_refresh_project_index
@@ -62,6 +61,7 @@ class SpecOrchestrator:
         thinking_level: str = "medium",  # Thinking level for extended thinking
         complexity_override: str | None = None,  # Force a specific complexity
         use_ai_assessment: bool = True,  # Use AI for complexity assessment (vs heuristics)
+        language: str = "en",  # Language for spec creation (en, fr, etc.)
     ):
         """Initialize the spec orchestrator.
 
@@ -74,6 +74,7 @@ class SpecOrchestrator:
             thinking_level: Thinking level (none, low, medium, high, ultrathink)
             complexity_override: Force a specific complexity level
             use_ai_assessment: Whether to use AI for complexity assessment
+            language: Language for spec creation (en, fr, etc.)
         """
         self.project_dir = Path(project_dir)
         self.task_description = task_description
@@ -81,6 +82,7 @@ class SpecOrchestrator:
         self.thinking_level = thinking_level
         self.complexity_override = complexity_override
         self.use_ai_assessment = use_ai_assessment
+        self.language = language
 
         # Get the appropriate specs directory (within the project)
         self.specs_dir = get_specs_dir(self.project_dir)
@@ -235,7 +237,6 @@ class SpecOrchestrator:
         # Initialize task logger for planning phase
         task_logger = get_task_logger(self.spec_dir)
         task_logger.start_phase(LogPhase.PLANNING, "Starting spec creation process")
-        TaskEventEmitter.from_spec_dir(self.spec_dir).emit("PLANNING_STARTED")
 
         print(
             box(
@@ -405,31 +406,12 @@ class SpecOrchestrator:
         # Summary
         self._print_completion_summary(results, phases_executed)
 
+        # Write task_metadata.json with spec creation configuration
+        self._write_task_metadata()
+
         # End planning phase successfully
         task_logger.end_phase(
             LogPhase.PLANNING, success=True, message="Spec creation complete"
-        )
-
-        # Load task metadata to check requireReviewBeforeCoding setting
-        task_metadata_file = self.spec_dir / "task_metadata.json"
-        require_review_before_coding = False
-        if task_metadata_file.exists():
-            with open(task_metadata_file, encoding="utf-8") as f:
-                task_metadata = json.load(f)
-                require_review_before_coding = task_metadata.get(
-                    "requireReviewBeforeCoding", False
-                )
-
-        # Emit PLANNING_COMPLETE event for XState machine transition
-        # This signals the frontend that spec creation is done
-        task_emitter = TaskEventEmitter.from_spec_dir(self.spec_dir)
-        task_emitter.emit(
-            "PLANNING_COMPLETE",
-            {
-                "hasSubtasks": False,  # Spec creation doesn't have subtasks yet
-                "subtaskCount": 0,
-                "requireReviewBeforeCoding": require_review_before_coding,
-            },
         )
 
         # === HUMAN REVIEW CHECKPOINT ===
@@ -636,6 +618,33 @@ class SpecOrchestrator:
                 style="heavy",
             )
         )
+
+    def _write_task_metadata(self) -> None:
+        """Write task_metadata.json with spec creation configuration.
+
+        This stores the language setting (and potentially other settings) for
+        use by subsequent phases (planning, coding, QA).
+        """
+        metadata_path = self.spec_dir / "task_metadata.json"
+
+        # Load existing metadata if it exists
+        existing_metadata: dict = {}
+        if metadata_path.exists():
+            try:
+                with open(metadata_path, encoding="utf-8") as f:
+                    existing_metadata = json.load(f)
+            except (json.JSONDecodeError, OSError):
+                # File exists but is corrupted, start fresh
+                existing_metadata = {}
+
+        # Update with spec creation settings
+        # Only write language if it's not the default
+        if self.language and self.language != "en":
+            existing_metadata["language"] = self.language
+
+        # Write back to file
+        with open(metadata_path, "w", encoding="utf-8") as f:
+            json.dump(existing_metadata, f, indent=2)
 
     def _run_review_checkpoint(self, auto_approve: bool) -> bool:
         """Run the human review checkpoint.

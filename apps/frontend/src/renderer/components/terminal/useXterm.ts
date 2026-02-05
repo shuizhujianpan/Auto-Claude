@@ -255,10 +255,11 @@ export function useXterm({ terminalId, onCommandEnter, onResize, onDimensionsRea
 
     // Replay buffered output if this is a remount or restored session
     // This now includes ANSI codes for proper formatting/colors/prompt
-    // Use atomic getAndClear to prevent race condition where new output could arrive between get() and clear()
-    const bufferedOutput = terminalBufferManager.getAndClear(terminalId);
+    const bufferedOutput = terminalBufferManager.get(terminalId);
     if (bufferedOutput && bufferedOutput.length > 0) {
       xterm.write(bufferedOutput);
+      // Clear buffer after replay to avoid duplicate output
+      terminalBufferManager.clear(terminalId);
     }
 
     // Handle terminal input
@@ -333,7 +334,7 @@ export function useXterm({ terminalId, onCommandEnter, onResize, onDimensionsRea
           }
         }
       }
-    }, 200); // 200ms debounce for xterm.js resize stability (recommended minimum)
+    }, 100); // 100ms debounce to prevent layout thrashing
 
     // Observe the terminalRef directly (not parent) for accurate resize detection
     const container = terminalRef.current;

@@ -139,12 +139,16 @@ from agents.tools_pkg import (
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
 from claude_agent_sdk.types import HookMatcher
 from core.auth import (
-    configure_sdk_authentication,
     get_sdk_env_vars,
+    require_auth_token,
+    validate_token_not_encrypted,
 )
 from linear_updater import is_linear_enabled
 from prompts_pkg.project_context import detect_project_capabilities, load_project_index
 from security import bash_security_hook
+
+# i18n support - get language setting from spec directory
+from core.i18n import get_language_prompt, get_language_setting
 
 
 def _validate_custom_mcp_server(server: dict) -> bool:
@@ -489,18 +493,19 @@ def create_client(
        (see security.py for ALLOWED_COMMANDS)
     4. Tool filtering - Each agent type only sees relevant tools (prevents misuse)
     """
-    # Collect env vars to pass to SDK (ANTHROPIC_BASE_URL, CLAUDE_CONFIG_DIR, etc.)
+    # Get OAuth token - Claude CLI handles token lifecycle internally
+    oauth_token = require_auth_token()
+
+    # Validate token is not encrypted before passing to SDK
+    # Encrypted tokens (enc:...) should have been decrypted by require_auth_token()
+    # If we still have an encrypted token here, it means decryption failed or was skipped
+    validate_token_not_encrypted(oauth_token)
+
+    # Ensure SDK can access it via its expected env var
+    os.environ["CLAUDE_CODE_OAUTH_TOKEN"] = oauth_token
+
+    # Collect env vars to pass to SDK (ANTHROPIC_BASE_URL, etc.)
     sdk_env = get_sdk_env_vars()
-
-    # Get the config dir for profile-specific credential lookup
-    # CLAUDE_CONFIG_DIR enables per-profile Keychain entries with SHA256-hashed service names
-    config_dir = sdk_env.get("CLAUDE_CONFIG_DIR")
-
-    # Configure SDK authentication (OAuth or API profile mode)
-    configure_sdk_authentication(config_dir)
-
-    if config_dir:
-        logger.info(f"Using CLAUDE_CONFIG_DIR for profile: {config_dir}")
 
     # Debug: Log git-bash path detection on Windows
     if "CLAUDE_CODE_GIT_BASH_PATH" in sdk_env:
@@ -791,6 +796,36 @@ def create_client(
             print("   - CLAUDE.md: not found in project root")
     else:
         print("   - CLAUDE.md: disabled by project settings")
+
+    # i18n: Inject language instruction based on language setting from spec directory
+    # Priority: env var AUTO_CLAUDE_LANGUAGE > task_metadata.json > default (en)
+    metadata_path = spec_dir / "task_metadata.json"
+
+    # Detect language setting source for status print
+    env_language = os.environ.get("AUTO_CLAUDE_LANGUAGE")
+    if env_language and env_language in ["en", "fr", "zh-CN"]:
+        language = env_language  # type: ignore[assignment]
+        print(f"   - Language: {language} (from AUTO_CLAUDE_LANGUAGE environment variable)")
+    elif metadata_path.exists():
+        try:
+            with open(metadata_path, encoding="utf-8") as f:
+                metadata = json.load(f)
+                language = metadata.get("language")
+                if language in ["en", "fr", "zh-CN"]:
+                    print(f"   - Language: {language} (from task_metadata.json)")
+                else:
+                    language = "en"  # type: ignore[assignment]
+                    print(f"   - Language: {language} (default - invalid value in task_metadata.json)")
+        except (json.JSONDecodeError, OSError):
+            language = "en"  # type: ignore[assignment]
+            print("   - Language: en (default - failed to read task_metadata.json)")
+    else:
+        language = "en"  # type: ignore[assignment]
+        print("   - Language: en (default - task_metadata.json not found)")
+
+    language_instruction = get_language_prompt(language)
+    base_prompt = f"{base_prompt}\n\n{language_instruction}"
+
     print()
 
     # Build options dict, conditionally including output_format

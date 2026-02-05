@@ -13,101 +13,162 @@ This approach:
 """
 
 import json
-import re
+import os
 from pathlib import Path
 
-# Worktree path patterns for detection
-# Matches paths like: .auto-claude/worktrees/tasks/{spec-name}/
-WORKTREE_PATH_PATTERNS = [
-    r"[/\\]\.auto-claude[/\\]worktrees[/\\]tasks[/\\]",
-    r"[/\\]\.auto-claude[/\\]github[/\\]pr[/\\]worktrees[/\\]",  # PR review worktrees
-    r"[/\\]\.worktrees[/\\]",  # Legacy worktree location
-]
 
-
-def detect_worktree_isolation(project_dir: Path) -> tuple[bool, Path | None]:
+def get_language_setting() -> str:
     """
-    Detect if the project_dir is inside an isolated worktree.
+    从环境变量读取语言设置。
 
-    When running in a worktree, the agent should NOT escape to the parent project.
-    This function detects worktree mode and extracts the forbidden parent path.
-
-    Args:
-        project_dir: The working directory for the AI
+    从 AUTO_CLAUDE_LANGUAGE 环境变量读取语言设置。
+    如果未设置，默认返回 'en-US'。
 
     Returns:
-        Tuple of (is_worktree, parent_project_path)
-        - is_worktree: True if running in an isolated worktree
-        - parent_project_path: The forbidden parent project path (None if not in worktree)
+        str: 语言代码，例如 'en-US'、'zh-CN' 等
     """
-    # Resolve the path first for consistent matching across platforms
-    # This handles Windows drive letters, symlinks, and relative paths
-    resolved_dir = project_dir.resolve()
-    project_str = str(resolved_dir)
+    return os.environ.get("AUTO_CLAUDE_LANGUAGE", "en-US")
 
-    for pattern in WORKTREE_PATH_PATTERNS:
-        match = re.search(pattern, project_str)
-        if match:
-            # Extract the parent project path (everything before the worktree marker)
-            parent_path = project_str[: match.start()]
-            # Handle edge case where worktree is at filesystem root
-            if not parent_path:
-                parent_path = resolved_dir.anchor
-            return True, Path(parent_path)
+
+def generate_language_instruction(language: str) -> str:
+    """
+    根据语言代码生成语言使用指令。
+
+    为 AI 生成指定语言的使用说明，包括与用户交流、
+    Git 提交信息、代码注释和文档、调试打印语句和日志输出的语言要求。
+
+    Args:
+        language: 语言代码，支持 'en'、'fr'、'zh-CN'
+
+    Returns:
+        str: 该语言的使用指令和要求
+
+    Examples:
+        >>> generate_language_instruction('zh-CN')
+        '## 语言要求\\n\\n你必须使用中文进行所有面向用户的交流...'
+        >>> generate_language_instruction('en')
+        '## Language Requirements\\n\\nYou must use English for all user-facing...'
+    """
+    instructions = {
+        "en": """## Language Requirements
+
+You must use English for all user-facing communications, including:
+
+**1. User Interaction**
+- Terminal output and progress messages
+- User-facing dialog messages
+- Error messages and warnings
+
+**2. Git Commits**
+- Commit messages in English
+- Follow conventional commit format: `type(scope): description`
+- Keep descriptions clear and concise
+
+**3. Code Documentation**
+- Code comments explaining logic
+- Function and class docstrings
+- README and documentation files
+
+**4. Debug Output**
+- Console.log/print debugging statements
+- Log messages for troubleshooting
+
+**Important:**
+- Use clear, professional English
+- Write commit messages in the imperative mood (e.g., "Add feature" not "Added feature")
+- Keep comments focused on "why" rather than "what"
+""",
+        "fr": """## Exigences Linguistiques
+
+Vous devez utiliser le français pour toutes les communications orientées utilisateur, y compris :
+
+**1. Interaction Utilisateur**
+- Messages de sortie du terminal et de progression
+- Messages de dialogue orientés utilisateur
+- Messages d'erreur et d'avertissement
+
+**2. Commits Git**
+- Messages de commit en français
+- Suivre le format conventionnel : `type(portée): description`
+- Garder les descriptions claires et concises
+
+**3. Documentation du Code**
+- Commentaires de code expliquant la logique
+- Docstrings pour fonctions et classes
+- Fichiers README et documentation
+
+**4. Sortie de Débogage**
+- Instructions console.log/print pour le débogage
+- Messages de journalisation pour le dépannage
+
+**Important :**
+- Utiliser un français clair et professionnel
+- Écrire les messages de commit à l'impératif
+- Concentrer les commentaires sur le "pourquoi" plutôt que le "quoi"
+""",
+        "zh-CN": """## 语言要求
+
+你必须使用中文进行所有面向用户的交流，包括：
+
+**1. 用户交互**
+- 终端输出和进度消息
+- 面向用户的对话框消息
+- 错误消息和警告
+
+**2. Git 提交**
+- 使用中文编写 Git 提交信息
+- 遵循约定式提交格式：`type(scope): 描述`
+- 保持描述清晰简洁
+
+**3. 代码文档**
+- 解释逻辑的代码注释
+- 函数和类的文档字符串
+- README 和文档文件
+
+**4. 调试输出**
+- 调试打印语句（console.log/print）
+- 故障排除的日志消息
+
+**重要提示：**
+- 使用清晰、专业的中文
+- 提交信息使用祈使语气（如"添加功能"而非"已添加功能"）
+- 注释应关注"为什么"而非"是什么"
+""",
+    }
+
+    # Return the instruction for the requested language, or English as fallback
+    return instructions.get(language, instructions["en"])
+
+
+def detect_worktree_mode(spec_dir: Path) -> tuple[bool, str | None]:
+    """
+    Detect if running in isolated worktree mode.
+
+    Args:
+        spec_dir: Absolute path to spec directory
+
+    Returns:
+        (is_worktree, forbidden_parent_path) tuple:
+        - is_worktree: True if running in a worktree
+        - forbidden_parent_path: The parent project path to forbid, or None
+    """
+    # Check if spec_dir contains worktree path patterns
+    # Normalize path separators to forward slashes for consistent matching
+    spec_str = str(spec_dir).replace("\\", "/")
+
+    # New worktree location: .auto-claude/worktrees/tasks/{spec-name}/
+    new_worktree_marker = "/.auto-claude/worktrees/tasks/"
+    if new_worktree_marker in spec_str:
+        parent_path = spec_str.split(new_worktree_marker, 1)[0]
+        return True, parent_path
+
+    # Legacy worktree location: .worktrees/{spec-name}/
+    legacy_worktree_marker = "/.worktrees/"
+    if legacy_worktree_marker in spec_str:
+        parent_path = spec_str.split(legacy_worktree_marker, 1)[0]
+        return True, parent_path
 
     return False, None
-
-
-def generate_worktree_isolation_warning(
-    project_dir: Path, parent_project_path: Path
-) -> str:
-    """
-    Generate the worktree isolation warning section for prompts.
-
-    This warning explicitly tells the agent that it's in an isolated worktree
-    and must NOT escape to the parent project directory.
-
-    Args:
-        project_dir: The worktree directory (agent's working directory)
-        parent_project_path: The forbidden parent project path
-
-    Returns:
-        Markdown string with isolation warning
-    """
-    return f"""## ⛔ ISOLATED WORKTREE - CRITICAL
-
-You are in an **ISOLATED GIT WORKTREE** - a complete copy of the project for safe development.
-
-**YOUR LOCATION:** `{project_dir}`
-**FORBIDDEN PATH:** `{parent_project_path}`
-
-### Rules:
-1. **NEVER** use `cd {parent_project_path}` or any path starting with `{parent_project_path}`
-2. **NEVER** use absolute paths that reference the parent project
-3. **ALL** project files exist HERE via relative paths
-
-### Why This Matters:
-- Git commits made in the parent project go to the WRONG branch
-- File changes in the parent project escape isolation
-- This defeats the entire purpose of safe, isolated development
-
-### Correct Usage:
-```bash
-# ✅ CORRECT - Use relative paths from your worktree
-./prod/src/file.ts
-./apps/frontend/src/component.tsx
-
-# ❌ WRONG - These escape isolation!
-cd {parent_project_path}
-{parent_project_path}/prod/src/file.ts
-```
-
-If you see absolute paths in spec.md or context.json that reference `{parent_project_path}`,
-convert them to relative paths from YOUR current location.
-
----
-
-"""
 
 
 def get_relative_spec_path(spec_dir: Path, project_dir: Path) -> str:
@@ -138,7 +199,6 @@ def generate_environment_context(project_dir: Path, spec_dir: Path) -> str:
     Generate environment context header for prompts.
 
     This explicitly tells the AI where it is working, preventing path confusion.
-    When running in a worktree, includes an isolation warning to prevent escaping.
 
     Args:
         project_dir: The working directory for the AI
@@ -149,21 +209,14 @@ def generate_environment_context(project_dir: Path, spec_dir: Path) -> str:
     """
     relative_spec = get_relative_spec_path(spec_dir, project_dir)
 
-    # Check if we're in an isolated worktree
-    is_worktree, parent_project_path = detect_worktree_isolation(project_dir)
+    # Detect worktree mode and get forbidden parent path
+    is_worktree, forbidden_parent = detect_worktree_mode(spec_dir)
 
-    # Start with worktree isolation warning if applicable
-    sections = []
-    if is_worktree and parent_project_path:
-        sections.append(
-            generate_worktree_isolation_warning(project_dir, parent_project_path)
-        )
-
-    sections.append(f"""## YOUR ENVIRONMENT
+    # Build the environment context
+    context = f"""## YOUR ENVIRONMENT
 
 **Working Directory:** `{project_dir}`
 **Spec Location:** `{relative_spec}/`
-{"**Isolation Mode:** WORKTREE (changes are isolated from main project)" if is_worktree else ""}
 
 Your filesystem is restricted to your working directory. All file paths should be
 relative to this location. Do NOT use absolute paths.
@@ -181,9 +234,35 @@ coder prompt for detailed examples.
 
 ---
 
-""")
+"""
 
-    return "".join(sections)
+    # Add worktree isolation warning if in worktree mode
+    if is_worktree and forbidden_parent:
+        context += f"""## 🚨 ISOLATED WORKTREE - CRITICAL
+
+You are in an **ISOLATED GIT WORKTREE** - a complete copy of the project.
+
+**YOUR LOCATION:** `{project_dir}`
+**FORBIDDEN:** Do NOT use `cd {forbidden_parent}` or `cd ../..` - this **ESCAPES ISOLATION**
+
+All project files exist HERE via relative paths from your working directory.
+
+**CRITICAL RULES:**
+* **NEVER** `cd {forbidden_parent}` or any path traversal outside your worktree
+* **STAY** within your working directory at all times
+* **ALL** file operations use paths relative to your current location
+* Before any `cd` command, run `pwd` and verify the target is within your worktree
+
+**VIOLATION WARNING:** Escaping the worktree will cause:
+* Git commits going to wrong branch
+* Files created/modified in the wrong location
+* Breaking worktree isolation guarantees
+
+---
+
+"""
+
+    return context
 
 
 def generate_subtask_prompt(

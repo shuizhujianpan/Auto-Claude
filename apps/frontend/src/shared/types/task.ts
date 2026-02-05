@@ -15,7 +15,7 @@ export type TaskOrderState = Record<TaskStatus, string[]>;
 // - 'errors': Subtasks failed during execution
 // - 'qa_rejected': QA found issues that need fixing
 // - 'plan_review': Spec/plan created and awaiting approval before coding starts
-export type ReviewReason = 'completed' | 'errors' | 'qa_rejected' | 'plan_review' | 'stopped';
+export type ReviewReason = 'completed' | 'errors' | 'qa_rejected' | 'plan_review';
 
 export type SubtaskStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
 
@@ -177,7 +177,7 @@ export type TaskCategory =
 
 export interface TaskMetadata {
   // Origin tracking
-  sourceType?: 'ideation' | 'manual' | 'imported' | 'insights' | 'roadmap' | 'linear' | 'github' | 'gitlab' | 'gitea';
+  sourceType?: 'ideation' | 'manual' | 'imported' | 'insights' | 'roadmap' | 'linear' | 'github' | 'gitlab';
   ideationType?: string;  // e.g., 'code_improvements', 'security_hardening'
   ideaId?: string;  // Reference to original idea if converted
   featureId?: string;  // Reference to roadmap feature if from roadmap
@@ -190,8 +190,6 @@ export interface TaskMetadata {
   githubBatchTheme?: string;  // Theme/title of the GitHub issue batch
   gitlabIssueIid?: number;  // Reference to GitLab issue IID if from GitLab
   gitlabUrl?: string;  // GitLab issue URL
-  giteaIssueIndex?: number;  // Reference to Gitea issue index if from Gitea
-  giteaUrl?: string;  // Gitea issue URL
 
   // Classification
   category?: TaskCategory;
@@ -234,6 +232,9 @@ export interface TaskMetadata {
   isAutoProfile?: boolean;  // True when using Auto (Optimized) profile
   phaseModels?: PhaseModelConfig;  // Per-phase model configuration
   phaseThinking?: PhaseThinkingConfig;  // Per-phase thinking configuration
+
+  // Language setting for spec creation and agent output
+  language?: string;  // Language code (e.g., 'en', 'fr') for spec creation and agent responses
 
   // Git/Worktree configuration
   baseBranch?: string;  // Override base branch for this task's worktree
@@ -281,14 +282,6 @@ export interface ImplementationPlan {
   // Added for UI status persistence
   status?: TaskStatus;
   planStatus?: string;
-  reviewReason?: ReviewReason;
-  xstateState?: string;  // Persisted XState machine state for restoration (e.g., 'planning', 'coding')
-  lastEvent?: {
-    eventId: string;
-    sequence: number;
-    type: string;
-    timestamp: string;
-  };
   recoveryNote?: string;
   description?: string;
 }
@@ -362,13 +355,6 @@ export interface PathMappedAIMerge {
   reason: string;
 }
 
-// Conflict scenario types for better UX messaging
-// - 'already_merged': Task changes already identical in target branch
-// - 'superseded': Target has newer version of same feature
-// - 'diverged': Standard diverged branches (AI can resolve)
-// - 'normal_conflict': Actual conflicting changes
-export type ConflictScenario = 'already_merged' | 'superseded' | 'diverged' | 'normal_conflict';
-
 // Git-level conflict information (branch divergence)
 export interface GitConflictInfo {
   hasConflicts: boolean;
@@ -381,12 +367,6 @@ export interface GitConflictInfo {
   pathMappedAIMerges?: PathMappedAIMerge[];
   // Total number of file renames detected
   totalRenames?: number;
-  // Conflict scenario for better UX messaging
-  scenario?: ConflictScenario;
-  // Files that are already merged (identical in both branches)
-  alreadyMergedFiles?: string[];
-  // Human-readable message about the scenario
-  scenarioMessage?: string;
 }
 
 // Summary statistics from merge preview/execution
@@ -400,30 +380,6 @@ export interface MergeStats {
   hasGitConflicts?: boolean; // True if there are git-level conflicts requiring rebase
   // Count of files needing AI merge due to path mappings (file renames)
   pathMappedAIMergeCount?: number;
-}
-
-// Merge progress tracking (for progress bar during merge operations)
-export type MergeStage = 'analyzing' | 'detecting_conflicts' | 'resolving' | 'validating' | 'complete' | 'error';
-
-export interface MergeProgress {
-  stage: MergeStage;
-  percent: number;
-  message: string;
-  details?: {
-    conflicts_found?: number;
-    conflicts_resolved?: number;
-    current_file?: string;
-  };
-}
-
-// Merge log entry (for conflict resolution logging)
-export type MergeLogEntryType = 'info' | 'success' | 'warning' | 'error';
-
-export interface MergeLogEntry {
-  timestamp: string;
-  type: MergeLogEntryType;
-  message: string;
-  details?: string;
 }
 
 export interface WorktreeMergeResult {
@@ -489,12 +445,10 @@ export interface WorktreeListItem {
   path: string;
   branch: string;
   baseBranch: string;
-  commitCount?: number;
-  filesChanged?: number;
-  additions?: number;
-  deletions?: number;
-  /** True if git commands failed on this worktree (corrupted/orphaned state) */
-  isOrphaned?: boolean;
+  commitCount: number;
+  filesChanged: number;
+  additions: number;
+  deletions: number;
 }
 
 /**

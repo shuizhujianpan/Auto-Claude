@@ -85,6 +85,7 @@ class TaskMetadataConfig(TypedDict, total=False):
     phaseThinking: PhaseThinkingConfig
     model: str
     thinkingLevel: str
+    language: str  # Language code for spec creation and agent responses (e.g., 'en', 'fr')
 
 
 Phase = Literal["spec", "planning", "coding", "qa"]
@@ -317,3 +318,20 @@ def get_spec_phase_thinking_budget(phase_name: str) -> int | None:
     """
     thinking_level = SPEC_PHASE_THINKING_LEVELS.get(phase_name, "medium")
     return get_thinking_budget(thinking_level)
+
+
+def get_task_language(spec_dir: Path, default: str = "en") -> str:
+    """
+    Get the language setting from task_metadata.json.
+
+    Args:
+        spec_dir: Path to the spec directory
+        default: Default language to return if not found (default: 'en')
+
+    Returns:
+        Language code (e.g., 'en', 'fr')
+    """
+    metadata = load_task_metadata(spec_dir)
+    if metadata and metadata.get("language"):
+        return metadata["language"]
+    return default

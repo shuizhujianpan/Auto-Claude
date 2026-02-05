@@ -250,6 +250,11 @@
     "colorTheme": "颜色主题",
     "colorThemeDescription": "为界面选择调色板"
   },
+  "projectSelector": {
+    "selectProject": "选择项目...",
+    "noProjectsYet": "暂无项目",
+    "addProject": "添加项目..."
+  },
   "devtools": {
     "title": "开发工具",
     "description": "配置您首选的 IDE 和终端以使用工作树",
@@ -387,13 +392,6 @@
       "integrationTitle": "GitLab 集成",
       "integrationDescription": "连接到 GitLab 进行问题跟踪",
       "syncDescription": "与 GitLab 问题同步"
-    },
-    "gitea": {
-      "title": "Gitea",
-      "description": "Gitea 问题同步",
-      "integrationTitle": "Gitea 集成",
-      "integrationDescription": "连接到 Gitea 进行问题跟踪",
-      "syncDescription": "与 Gitea 问题同步"
     },
     "memory": {
       "title": "内存",
@@ -827,41 +825,6 @@
       "issuesAvailableLabel": "可用的 Issues",
       "issuesAvailableMessage": "从侧边栏访问 GitHub Issues 以查看、调查和从 issues 创建任务。"
     },
-    "gitea": {
-      "enableIssues": "启用 Gitea Issues",
-      "syncDescription": "从 Gitea 同步 issues 并自动创建任务",
-      "personalAccessToken": "个人访问令牌",
-      "createTokenFrom": "使用以下范围创建令牌",
-      "repoScope": "repo",
-      "scopeFrom": "来自",
-      "giteaSettings": "Gitea 设置",
-      "placeholderToken": "具有 repo 范围的 gitea 令牌",
-      "instance": "Gitea 实例",
-      "instanceDescription": "Gitea 实例的 URL（gitea.com 或自托管）",
-      "repository": "仓库",
-      "repoFormat": "格式：所有者/仓库（例如：gitea/gitea）",
-      "placeholderOwnerRepo": "所有者/仓库",
-      "searchRepositories": "搜索仓库...",
-      "loadingRepos": "加载仓库中...",
-      "selectRepository": "选择仓库...",
-      "noMatchingRepos": "没有匹配的仓库",
-      "noReposFound": "未找到仓库",
-      "connectionStatus": "连接状态",
-      "connectedTo": "已连接到 {{repo}}",
-      "notConnected": "未连接",
-      "issuesAvailable": "可用的 Issues",
-      "issuesAvailableDescription": "从侧边栏访问 Gitea Issues 以查看、调查和从 issues 创建任务。",
-      "autoSyncOnLoad": "加载时自动同步",
-      "autoSyncDescription": "项目加载时自动获取 issues",
-      "defaultBranch": "默认分支",
-      "defaultBranchDescription": "用于创建任务工作树的基础分支",
-      "placeholderSearchBranches": "搜索分支...",
-      "loadingBranches": "加载分支中...",
-      "autoDetect": "自动检测（main/master）",
-      "noMatchingBranches": "没有匹配的分支",
-      "noBranchesFound": "未找到分支",
-      "allTasksBranchFrom": "所有新任务将从以下分支创建"
-    },
     "linear": {
       "enableSync": "启用 Linear 同步",
       "description": "自动创建和更新 Linear 议题",
@@ -1057,6 +1020,7 @@
     "toolsTitle": "可用工具",
     "textOnlyNoTools": "仅文本（无工具）",
     "agentsCount": "({{count}} 个代理)",
+    "testConnection": "测试连接",
     "test": "测试",
     "edit": "编辑",
     "delete": "删除",

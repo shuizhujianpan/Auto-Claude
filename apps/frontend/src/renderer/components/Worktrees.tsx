@@ -46,7 +46,6 @@ import {
 } from './ui/alert-dialog';
 import { useProjectStore } from '../stores/project-store';
 import { useTaskStore } from '../stores/task-store';
-import { useToast } from '../hooks/use-toast';
 import type { WorktreeListItem, WorktreeMergeResult, TerminalWorktreeConfig, WorktreeStatus, Task, WorktreeCreatePROptions, WorktreeCreatePRResult } from '../../shared/types';
 import { CreatePRDialog } from './task-detail/task-review/CreatePRDialog';
 
@@ -60,7 +59,6 @@ interface WorktreesProps {
 
 export function Worktrees({ projectId }: WorktreesProps) {
   const { t } = useTranslation(['common', 'dialogs']);
-  const { toast } = useToast();
   const projects = useProjectStore((state) => state.projects);
   const selectedProject = projects.find((p) => p.id === projectId);
   const tasks = useTaskStore((state) => state.tasks);
@@ -168,7 +166,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
     try {
       // Fetch both task worktrees and terminal worktrees in parallel
       const [taskResult, terminalResult] = await Promise.all([
-        window.electronAPI.listWorktrees(projectId, { includeStats: true }),
+        window.electronAPI.listWorktrees(projectId),
         window.electronAPI.listTerminalWorktrees(selectedProject.path)
       ]);
 
@@ -245,30 +243,18 @@ export function Worktrees({ projectId }: WorktreesProps) {
     if (!worktreeToDelete) return;
 
     const task = findTaskForWorktree(worktreeToDelete.specName);
+    if (!task) {
+      setError('Task not found for this worktree');
+      return;
+    }
 
     setIsDeleting(true);
     try {
-      let result;
-      if (task) {
-        // Normal delete via task ID
-        result = await window.electronAPI.discardWorktree(task.id);
-      } else if (worktreeToDelete.isOrphaned) {
-        // Orphaned worktree - delete by spec name directly
-        result = await window.electronAPI.discardOrphanedWorktree(projectId, worktreeToDelete.specName);
-      } else {
-        setError(t('common:errors.taskNotFoundForWorktree', { specName: worktreeToDelete.specName }));
-        setIsDeleting(false);
-        return;
-      }
-
+      const result = await window.electronAPI.discardWorktree(task.id);
       if (result.success) {
         // Refresh worktrees after successful delete
         await loadWorktrees();
         setShowDeleteConfirm(false);
-        toast({
-          title: t('common:actions.success'),
-          description: t('common:worktrees.deleteSuccess', { branch: worktreeToDelete.branch || worktreeToDelete.specName }),
-        });
         setWorktreeToDelete(null);
       } else {
         setError(result.error || 'Failed to delete worktree');
@@ -299,10 +285,10 @@ export function Worktrees({ projectId }: WorktreesProps) {
     worktreePath: worktree.path,
     branch: worktree.branch,
     baseBranch: worktree.baseBranch,
-    commitCount: worktree.commitCount ?? 0,
-    filesChanged: worktree.filesChanged ?? 0,
-    additions: worktree.additions ?? 0,
-    deletions: worktree.deletions ?? 0
+    commitCount: worktree.commitCount,
+    filesChanged: worktree.filesChanged,
+    additions: worktree.additions,
+    deletions: worktree.deletions
   });
 
   // Open Create PR dialog
@@ -364,21 +350,13 @@ export function Worktrees({ projectId }: WorktreesProps) {
     // Delete task worktrees
     for (const specName of taskSpecNames) {
       const task = findTaskForWorktree(specName);
-      const worktree = worktrees.find(w => w.specName === specName);
+      if (!task) {
+        errors.push(t('common:errors.taskNotFoundForWorktree', { specName }));
+        continue;
+      }
 
       try {
-        let result;
-        if (task) {
-          // Normal delete via task ID
-          result = await window.electronAPI.discardWorktree(task.id);
-        } else if (worktree?.isOrphaned) {
-          // Orphaned worktree - delete by spec name directly
-          result = await window.electronAPI.discardOrphanedWorktree(projectId, specName);
-        } else {
-          errors.push(t('common:errors.taskNotFoundForWorktree', { specName }));
-          continue;
-        }
-
+        const result = await window.electronAPI.discardWorktree(task.id);
         if (!result.success) {
           errors.push(result.error || t('common:errors.failedToDeleteTaskWorktree', { specName }));
         }
@@ -414,20 +392,13 @@ export function Worktrees({ projectId }: WorktreesProps) {
     setShowBulkDeleteConfirm(false);
     await loadWorktrees();
 
-    const deletedCount = taskSpecNames.length + terminalNames.length;
-
-    // Show error if any failures occurred, otherwise show success toast
+    // Show error if any failures occurred
     if (errors.length > 0) {
       setError(`${t('common:errors.bulkDeletePartialFailure')}\n${errors.join('\n')}`);
-    } else {
-      toast({
-        title: t('common:actions.success'),
-        description: t('common:worktrees.bulkDeleteSuccess', { count: deletedCount }),
-      });
     }
 
     setIsBulkDeleting(false);
-  }, [selectedWorktreeIds, selectedProject, worktrees, terminalWorktrees, projectId, findTaskForWorktree, loadWorktrees, t, toast]);
+  }, [selectedWorktreeIds, selectedProject, terminalWorktrees, findTaskForWorktree, loadWorktrees, t]);
 
   // Handle terminal worktree delete
   const handleDeleteTerminalWorktree = async () => {
@@ -595,7 +566,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
                             <div className="flex-1 min-w-0">
                               <CardTitle className="text-base flex items-center gap-2">
                                 <GitBranch className="h-4 w-4 text-info shrink-0" />
-                                <span className="truncate">{worktree.isOrphaned ? t('common:labels.orphaned') : worktree.branch}</span>
+                                <span className="truncate">{worktree.branch}</span>
                               </CardTitle>
                               {task && (
                                 <CardDescription className="mt-1 truncate">
@@ -622,19 +593,19 @@ export function Worktrees({ projectId }: WorktreesProps) {
                           </div>
                           <div className="flex items-center gap-1.5 text-success">
                             <Plus className="h-3.5 w-3.5" />
-                            <span>{worktree.additions ?? 0}</span>
+                            <span>{worktree.additions}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-destructive">
                             <Minus className="h-3.5 w-3.5" />
-                            <span>{worktree.deletions ?? 0}</span>
+                            <span>{worktree.deletions}</span>
                           </div>
                         </div>
 
                         {/* Branch info */}
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4 bg-muted/50 rounded-md p-2">
-                          <span className="font-mono">{worktree.baseBranch || t('common:labels.orphaned')}</span>
+                          <span className="font-mono">{worktree.baseBranch}</span>
                           <ChevronRight className="h-3 w-3" />
-                          <span className="font-mono text-info">{worktree.isOrphaned ? t('common:labels.orphaned') : worktree.branch}</span>
+                          <span className="font-mono text-info">{worktree.branch}</span>
                         </div>
 
                         {/* Actions */}
@@ -684,7 +655,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
                             size="sm"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => confirmDelete(worktree)}
-                            disabled={!task && !worktree.isOrphaned}
+                            disabled={!task}
                           >
                             <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                             {t('common:buttons.delete')}
@@ -805,7 +776,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
               <div className="rounded-lg bg-muted p-4 text-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">{t('common:worktrees.merge.sourceBranch')}</span>
-                  <span className="font-mono text-info">{selectedWorktree.isOrphaned ? t('common:labels.orphaned') : selectedWorktree.branch}</span>
+                  <span className="font-mono text-info">{selectedWorktree.branch}</span>
                 </div>
                 <div className="flex items-center justify-center">
                   <ChevronRight className="h-4 w-4 text-muted-foreground rotate-90" />
@@ -901,7 +872,7 @@ export function Worktrees({ projectId }: WorktreesProps) {
               {t('common:worktrees.delete.description')}
               {worktreeToDelete && (
                 <span className="block mt-2 font-mono text-sm">
-                  {worktreeToDelete.isOrphaned ? t('common:labels.orphaned') : worktreeToDelete.branch}
+                  {worktreeToDelete.branch}
                 </span>
               )}
               {t('common:worktrees.delete.warning')}

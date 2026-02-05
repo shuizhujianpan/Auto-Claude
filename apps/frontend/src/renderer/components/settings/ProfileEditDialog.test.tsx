@@ -135,7 +135,7 @@ describe('ProfileEditDialog - Edit Mode', () => {
     fireEvent.change(nameInput, { target: { value: 'Updated Profile Name' } });
 
     // Click save
-    const saveButton = screen.getByTestId('save-button');
+    const saveButton = screen.getByText(/save profile/i);
     fireEvent.click(saveButton);
 
     // Verify updateProfile was called (not saveProfile)
@@ -162,7 +162,7 @@ describe('ProfileEditDialog - Edit Mode', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('profile-dialog-title')).toHaveTextContent('Edit Profile');
+      expect(screen.getByText('Edit Profile')).toBeInTheDocument();
     });
   });
 
@@ -183,7 +183,7 @@ describe('ProfileEditDialog - Edit Mode', () => {
       />
     );
 
-    const cancelButton = screen.getByTestId('cancel-button');
+    const cancelButton = screen.getByText('Cancel');
     fireEvent.click(cancelButton);
 
     await waitFor(() => {
@@ -241,7 +241,7 @@ describe('ProfileEditDialog - Create Mode', () => {
       />
     );
 
-    expect(screen.getByTestId('profile-dialog-title')).toHaveTextContent('Add API Profile');
+    expect(screen.getByText('Add API Profile')).toBeInTheDocument();
   });
 
   // Fields should be empty in create mode
@@ -366,7 +366,7 @@ describe('ProfileEditDialog - Validation', () => {
     fireEvent.change(urlInput, { target: { value: 'not-a-valid-url' } });
 
     // Click save to trigger validation
-    const saveButton = screen.getByTestId('save-button');
+    const saveButton = screen.getByText(/save profile/i);
     fireEvent.click(saveButton);
 
     // Should show error
@@ -400,7 +400,7 @@ describe('ProfileEditDialog - Validation', () => {
     fireEvent.change(nameInput, { target: { value: 'Duplicate Name' } });
 
     // Click save
-    const saveButton = screen.getByTestId('save-button');
+    const saveButton = screen.getByText(/save profile/i);
     fireEvent.click(saveButton);
 
     // Should show error from store
@@ -443,7 +443,7 @@ describe('ProfileEditDialog - Validation', () => {
     fireEvent.change(nameInput, { target: { value: 'Updated Active Profile' } });
 
     // Click save
-    const saveButton = screen.getByTestId('save-button');
+    const saveButton = screen.getByText(/save profile/i);
     fireEvent.click(saveButton);
 
     // Verify updateProfile was called
@@ -493,7 +493,7 @@ describe('ProfileEditDialog - Test Connection Feature', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('test-connection-button')).toBeInTheDocument();
+      expect(screen.getByText('Test Connection')).toBeInTheDocument();
     });
   });
 
@@ -506,7 +506,7 @@ describe('ProfileEditDialog - Test Connection Feature', () => {
       />
     );
 
-    const testButton = await screen.findByTestId('test-connection-button');
+    const testButton = await screen.findByText('Test Connection');
     fireEvent.click(testButton);
 
     await waitFor(() => {
@@ -537,10 +537,10 @@ describe('ProfileEditDialog - Test Connection Feature', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('test-connection-button')).toHaveTextContent('Testing...');
+      expect(screen.getByText('Testing...')).toBeInTheDocument();
     });
 
-    const testButton = screen.getByTestId('test-connection-button');
+    const testButton = screen.getByText('Testing...');
     expect(testButton).toBeDisabled();
   });
 
@@ -626,7 +626,7 @@ describe('ProfileEditDialog - Test Connection Feature', () => {
     fireEvent.change(keyInput, { target: { value: 'sk-ant-test12345678' } });
 
     // Test button should still be disabled since baseUrl is empty
-    const testButton = screen.getByTestId('test-connection-button');
+    const testButton = screen.getByText('Test Connection');
     expect(testButton).toBeDisabled();
 
     // Should NOT call testConnection
@@ -686,7 +686,7 @@ describe('ProfileEditDialog - Test Connection Feature', () => {
       />
     );
 
-    const testButton = await screen.findByTestId('test-connection-button');
+    const testButton = await screen.findByText('Test Connection');
     fireEvent.click(testButton);
 
     await waitFor(() => {

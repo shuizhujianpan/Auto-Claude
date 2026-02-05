@@ -14,6 +14,10 @@ __all__ = [
     "WorkspaceManager",
     "WorktreeManager",
     "ProgressTracker",
+    "SupportedLanguage",
+    "LanguageInfo",
+    "AVAILABLE_LANGUAGES",
+    "DEFAULT_LANGUAGE",
 ]
 
 
@@ -39,4 +43,13 @@ def __getattr__(name):
         from . import client as _client
 
         return getattr(_client, name)
+    elif name in (
+        "SupportedLanguage",
+        "LanguageInfo",
+        "AVAILABLE_LANGUAGES",
+        "DEFAULT_LANGUAGE",
+    ):
+        from . import i18n as _i18n
+
+        return getattr(_i18n, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

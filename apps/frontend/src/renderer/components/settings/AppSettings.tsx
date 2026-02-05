@@ -30,16 +30,6 @@ function GitLabIcon({ className, title = 'GitLab' }: { className?: string; title
     </svg>
   );
 }
-
-// Gitea icon component (lucide-react doesn't have one)
-function GiteaIcon({ className, title = 'Gitea' }: { className?: string; title?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor" role="img" aria-labelledby="gitea-icon-title">
-      <title id="gitea-icon-title">{title}</title>
-      <path d="M4.209 4.603c-.247-.65-.709-.72-.952-.216L.371 10.48c-.403.827.07 1.203.734.86l1.65-.879c.394-.21.86-.115 1.134.217l2.342 2.836c.314.38.895.38 1.21 0l2.342-2.836c.274-.332.74-.427 1.133-.217l1.65.88c.665.342 1.138-.034.735-.861l-2.886-6.094c-.243-.504-.705-.434-.952.216L7.564 7.666a.628.628 0 0 1-1.172 0L4.209 4.603zM12 17.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11zm0-2a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-    </svg>
-  );
-}
 import {
   FullScreenDialog,
   FullScreenDialogContent,
@@ -100,7 +90,6 @@ const projectNavItemsConfig: NavItemConfig<ProjectSettingsSection>[] = [
   { id: 'linear', icon: Zap },
   { id: 'github', icon: Github },
   { id: 'gitlab', icon: GitLabIcon },
-  { id: 'gitea', icon: GiteaIcon },
   { id: 'memory', icon: Database }
 ];
 
