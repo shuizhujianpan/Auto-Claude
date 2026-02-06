@@ -112,6 +112,9 @@ export class ClaudeProfileManager {
    *
    * This migration resets the default profile's configDir to undefined, making it
    * use the system default directory and match the behavior of external cmd.
+   *
+   * Additionally, it ensures the default profile's ID is 'default' and updates
+   * activeProfileId if it was pointing to the old ID.
    */
   private migrateDefaultProfileConfigDir(): void {
     const defaultProfile = this.data.profiles.find(p => p.isDefault);
@@ -120,24 +123,50 @@ export class ClaudeProfileManager {
       return;  // No default profile, nothing to migrate
     }
 
-    // If default profile already has no configDir, no migration needed
-    if (!defaultProfile.configDir) {
-      return;
+    let needsSave = false;
+
+    // Migrate configDir: reset to undefined if it was in our isolated directory
+    if (defaultProfile.configDir) {
+      const isolatedDirPrefix = CLAUDE_PROFILES_DIR.toLowerCase();
+      const configDirLower = defaultProfile.configDir.toLowerCase();
+
+      if (configDirLower.startsWith(isolatedDirPrefix)) {
+        console.warn('[ClaudeProfileManager] Migrating default profile to use system default config dir:', {
+          profileId: defaultProfile.id,
+          oldConfigDir: defaultProfile.configDir,
+          newConfigDir: 'system default (~/.claude)'
+        });
+
+        defaultProfile.configDir = undefined;  // Use system default
+        needsSave = true;
+      }
     }
 
-    // Check if configDir is in our isolated profiles directory
-    // If so, migrate it to use system default
-    const isolatedDirPrefix = CLAUDE_PROFILES_DIR.toLowerCase();
-    const configDirLower = defaultProfile.configDir.toLowerCase();
+    // Migrate ID to 'default' if it's using old format
+    // Previously, profiles used sanitizedName as ID (e.g., 'primary')
+    // New format uses hardcoded 'default' for the default profile
+    if (defaultProfile.id !== 'default') {
+      const oldId = defaultProfile.id;
+      defaultProfile.id = 'default';
 
-    if (configDirLower.startsWith(isolatedDirPrefix)) {
-      console.warn('[ClaudeProfileManager] Migrating default profile to use system default config dir:', {
-        profileId: defaultProfile.id,
-        oldConfigDir: defaultProfile.configDir,
-        newConfigDir: 'system default (~/.claude)'
+      // Update activeProfileId if it was pointing to the old ID
+      if (this.data.activeProfileId === oldId) {
+        this.data.activeProfileId = 'default';
+        console.warn('[ClaudeProfileManager] Updated activeProfileId:', {
+          oldId,
+          newId: 'default'
+        });
+      }
+
+      console.warn('[ClaudeProfileManager] Migrated default profile ID:', {
+        oldId,
+        newId: 'default'
       });
 
-      defaultProfile.configDir = undefined;  // Use system default
+      needsSave = true;
+    }
+
+    if (needsSave) {
       this.save();
       console.warn('[ClaudeProfileManager] Default profile migration complete');
     }

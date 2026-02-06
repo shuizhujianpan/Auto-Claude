@@ -304,9 +304,16 @@ export function buildClaudeShellCommand(
       }
 
     default:
-      // On Windows, set CLAUDE_CONFIG_DIR inline if configDir is provided
-      // This ensures the environment variable is available for the command
-      // even if it's not set in the PTY's initial environment
+      // On Windows, set CLAUDE_CONFIG_DIR inline if configDir is provided.
+      //
+      // Note: CLAUDE_CONFIG_DIR is already set in the PTY's initial environment
+      // (via profileEnv during terminal creation). This inline setting is a defensive
+      // backup to ensure the environment variable is available even if:
+      // - The PTY environment was modified after creation
+      // - The command spawns a child process that doesn't inherit the PTY environment
+      //
+      // The `set "VAR=value" && command` syntax ensures the variable is set in the
+      // current CMD session before executing the command.
       if (isWin && config.configDir) {
         const escapedConfigDir = escapeForWindowsDoubleQuote(config.configDir);
         return `cls && ${cwdCommand}set "CLAUDE_CONFIG_DIR=${escapedConfigDir}" && ${pathPrefix}${fullCmd}\r`;
@@ -933,8 +940,8 @@ function executeProfileCommand(options: ExecuteProfileCommandOptions): boolean {
   // read full Keychain credentials including subscriptionType ("max") and rateLimitTier.
   // Using CLAUDE_CODE_OAUTH_TOKEN alone lacks tier info, causing "Claude API" display.
   //
-  // IMPORTANT: Even default profiles now have configDir (since migration to isolated directories).
-  // We should NOT check isDefault here - all profiles with configDir should use config-dir method.
+  // IMPORTANT: Only profiles with configDir (non-default profiles) should use config-dir method.
+  // Default profiles use system default ~/.claude directory (configDir is undefined).
   if (activeProfile.configDir) {
     const command = buildClaudeShellCommand(
       cwdCommand,
@@ -1014,8 +1021,8 @@ async function executeProfileCommandAsync(options: ExecuteProfileCommandOptions)
   // read full Keychain credentials including subscriptionType ("max") and rateLimitTier.
   // Using CLAUDE_CODE_OAUTH_TOKEN alone lacks tier info, causing "Claude API" display.
   //
-  // IMPORTANT: Even default profiles now have configDir (since migration to isolated directories).
-  // We should NOT check isDefault here - all profiles with configDir should use config-dir method.
+  // IMPORTANT: Only profiles with configDir (non-default profiles) should use config-dir method.
+  // Default profiles use system default ~/.claude directory (configDir is undefined).
   if (activeProfile.configDir) {
     const command = buildClaudeShellCommand(
       cwdCommand,
@@ -1125,8 +1132,11 @@ export function invokeClaude(
     // Check if we need to use profile-specific environment (configDir or token)
     // This is true when:
     // 1. A different profile is explicitly requested (profileId !== previousProfileId)
-    // 2. OR the active profile has a configDir (even for default profile)
-    // This ensures that profiles with isolated config directories use the config-dir method
+    // 2. OR the active profile has a configDir (non-default profiles only)
+    //
+    // Note: Default profile (configDir=undefined) uses system default ~/.claude directory
+    // and doesn't trigger profile-specific method when switching profiles. This is
+    // intentional to maintain consistent behavior with external Claude Code CLI.
     const needsEnvOverride: boolean = !!(
       (profileId && profileId !== previousProfileId) ||
       activeProfile?.configDir
@@ -1345,8 +1355,11 @@ export async function invokeClaudeAsync(
     // Check if we need to use profile-specific environment (configDir or token)
     // This is true when:
     // 1. A different profile is explicitly requested (profileId !== previousProfileId)
-    // 2. OR the active profile has a configDir (even for default profile)
-    // This ensures that profiles with isolated config directories use the config-dir method
+    // 2. OR the active profile has a configDir (non-default profiles only)
+    //
+    // Note: Default profile (configDir=undefined) uses system default ~/.claude directory
+    // and doesn't trigger profile-specific method when switching profiles. This is
+    // intentional to maintain consistent behavior with external Claude Code CLI.
     const needsEnvOverride: boolean = !!(
       (profileId && profileId !== previousProfileId) ||
       activeProfile?.configDir
