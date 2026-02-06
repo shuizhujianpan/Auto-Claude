@@ -215,7 +215,7 @@ const YOLO_MODE_FLAG = ' --dangerously-skip-permissions';
  * Note: Paths are NOT escaped - buildClaudeShellCommand handles platform-specific escaping.
  */
 type ClaudeCommandConfig =
-  | { method: 'default' }
+  | { method: 'default'; configDir?: string }
   | { method: 'temp-file'; tempFile: string }
   | { method: 'config-dir'; configDir: string };
 
@@ -244,6 +244,10 @@ type ClaudeCommandConfig =
  * // Default method (Unix/macOS)
  * buildClaudeShellCommand('cd /path && ', 'PATH=/bin ', 'claude', { method: 'default' });
  * // Returns: 'cd /path && PATH=/bin claude\r'
+ *
+ * // Default method with configDir (Windows - sets CLAUDE_CONFIG_DIR inline)
+ * buildClaudeShellCommand('', '', 'claude.cmd', { method: 'default', configDir: 'C:\\Users\\...\\claude-config' });
+ * // Returns: 'cls && set "CLAUDE_CONFIG_DIR=C:\\Users\\...\\claude-config" && claude.cmd\r'
  *
  * // Temp file method (Unix/macOS)
  * buildClaudeShellCommand('', '', 'claude', { method: 'temp-file', tempFile: '/tmp/token' });
@@ -300,6 +304,20 @@ export function buildClaudeShellCommand(
       }
 
     default:
+      // On Windows, set CLAUDE_CONFIG_DIR inline if configDir is provided.
+      //
+      // Note: CLAUDE_CONFIG_DIR is already set in the PTY's initial environment
+      // (via profileEnv during terminal creation). This inline setting is a defensive
+      // backup to ensure the environment variable is available even if:
+      // - The PTY environment was modified after creation
+      // - The command spawns a child process that doesn't inherit the PTY environment
+      //
+      // The `set "VAR=value" && command` syntax ensures the variable is set in the
+      // current CMD session before executing the command.
+      if (isWin && config.configDir) {
+        const escapedConfigDir = escapeForWindowsDoubleQuote(config.configDir);
+        return `cls && ${cwdCommand}set "CLAUDE_CONFIG_DIR=${escapedConfigDir}" && ${pathPrefix}${fullCmd}\r`;
+      }
       return `${cwdCommand}${pathPrefix}${fullCmd}\r`;
   }
 }
@@ -914,13 +932,16 @@ function executeProfileCommand(options: ExecuteProfileCommandOptions): boolean {
     logPrefix,
   } = options;
 
-  if (!needsEnvOverride || !activeProfile || activeProfile.isDefault) {
+  if (!needsEnvOverride || !activeProfile) {
     return false; // Use default method
   }
 
   // Prefer configDir over token because CLAUDE_CONFIG_DIR lets Claude Code
   // read full Keychain credentials including subscriptionType ("max") and rateLimitTier.
   // Using CLAUDE_CODE_OAUTH_TOKEN alone lacks tier info, causing "Claude API" display.
+  //
+  // IMPORTANT: Only profiles with configDir (non-default profiles) should use config-dir method.
+  // Default profiles use system default ~/.claude directory (configDir is undefined).
   if (activeProfile.configDir) {
     const command = buildClaudeShellCommand(
       cwdCommand,
@@ -992,13 +1013,16 @@ async function executeProfileCommandAsync(options: ExecuteProfileCommandOptions)
     logPrefix,
   } = options;
 
-  if (!needsEnvOverride || !activeProfile || activeProfile.isDefault) {
+  if (!needsEnvOverride || !activeProfile) {
     return false; // Use default method
   }
 
   // Prefer configDir over token because CLAUDE_CONFIG_DIR lets Claude Code
   // read full Keychain credentials including subscriptionType ("max") and rateLimitTier.
   // Using CLAUDE_CODE_OAUTH_TOKEN alone lacks tier info, causing "Claude API" display.
+  //
+  // IMPORTANT: Only profiles with configDir (non-default profiles) should use config-dir method.
+  // Default profiles use system default ~/.claude directory (configDir is undefined).
   if (activeProfile.configDir) {
     const command = buildClaudeShellCommand(
       cwdCommand,
@@ -1089,24 +1113,40 @@ export function invokeClaude(
       : profileManager.getActiveProfile();
 
     terminal.claudeProfileId = activeProfile?.id;
+    terminal.claudeConfigDir = activeProfile?.configDir;
 
     debugLog('[ClaudeIntegration:invokeClaude] Profile resolution:', {
       previousProfileId,
       newProfileId: activeProfile?.id,
       profileName: activeProfile?.name,
       hasOAuthToken: !!activeProfile?.oauthToken,
-      isDefault: activeProfile?.isDefault
+      isDefault: activeProfile?.isDefault,
+      configDir: activeProfile?.configDir
     });
 
     const cwdCommand = buildCdCommand(cwd, terminal.shellType);
     const { command: claudeCmd, env: claudeEnv } = getClaudeCliInvocation();
     const escapedClaudeCmd = escapeShellCommand(claudeCmd);
     const pathPrefix = buildPathPrefix(claudeEnv.PATH || '');
-    const needsEnvOverride: boolean = !!(profileId && profileId !== previousProfileId);
+
+    // Check if we need to use profile-specific environment (configDir or token)
+    // This is true when:
+    // 1. A different profile is explicitly requested (profileId !== previousProfileId)
+    // 2. OR the active profile has a configDir (non-default profiles only)
+    //
+    // Note: Default profile (configDir=undefined) uses system default ~/.claude directory
+    // and doesn't trigger profile-specific method when switching profiles. This is
+    // intentional to maintain consistent behavior with external Claude Code CLI.
+    const needsEnvOverride: boolean = !!(
+      (profileId && profileId !== previousProfileId) ||
+      activeProfile?.configDir
+    );
 
     debugLog('[ClaudeIntegration:invokeClaude] Environment override check:', {
       profileIdProvided: !!profileId,
       previousProfileId,
+      newProfileId: activeProfile?.id,
+      hasConfigDir: !!activeProfile?.configDir,
       needsEnvOverride
     });
 
@@ -1128,15 +1168,18 @@ export function invokeClaude(
     });
 
     if (executed) {
+      console.warn('[ClaudeIntegration:invokeClaude] Command executed via configDir/temp-file method');
       return; // Command already executed via configDir or temp-file method
     }
 
-    // Fall back to default method
-    if (activeProfile && !activeProfile.isDefault) {
-      debugLog('[ClaudeIntegration:invokeClaude] Using terminal environment for non-default profile:', activeProfile.name);
+    console.warn('[ClaudeIntegration:invokeClaude] Falling back to default method');
+
+    // Fall back to default method (no configDir available or not using config-dir method)
+    if (activeProfile && !activeProfile.configDir) {
+      debugLog('[ClaudeIntegration:invokeClaude] Profile has no configDir, using terminal environment:', activeProfile.name);
     }
 
-    const command = buildClaudeShellCommand(cwdCommand, pathPrefix, escapedClaudeCmd, { method: 'default' }, extraFlags);
+    const command = buildClaudeShellCommand(cwdCommand, pathPrefix, escapedClaudeCmd, { method: 'default', configDir: activeProfile?.configDir }, extraFlags);
     debugLog('[ClaudeIntegration:invokeClaude] Executing command (default method):', command);
     PtyManager.writeToPty(terminal, command);
 
@@ -1281,13 +1324,15 @@ export async function invokeClaudeAsync(
       : profileManager.getActiveProfile();
 
     terminal.claudeProfileId = activeProfile?.id;
+    terminal.claudeConfigDir = activeProfile?.configDir;
 
     debugLog('[ClaudeIntegration:invokeClaudeAsync] Profile resolution:', {
       previousProfileId,
       newProfileId: activeProfile?.id,
       profileName: activeProfile?.name,
       hasOAuthToken: !!activeProfile?.oauthToken,
-      isDefault: activeProfile?.isDefault
+      isDefault: activeProfile?.isDefault,
+      configDir: activeProfile?.configDir
     });
 
     // Async CLI invocation - non-blocking
@@ -1306,11 +1351,25 @@ export async function invokeClaudeAsync(
 
     const escapedClaudeCmd = escapeShellCommand(claudeCmd);
     const pathPrefix = buildPathPrefix(claudeEnv.PATH || '');
-    const needsEnvOverride: boolean = !!(profileId && profileId !== previousProfileId);
+
+    // Check if we need to use profile-specific environment (configDir or token)
+    // This is true when:
+    // 1. A different profile is explicitly requested (profileId !== previousProfileId)
+    // 2. OR the active profile has a configDir (non-default profiles only)
+    //
+    // Note: Default profile (configDir=undefined) uses system default ~/.claude directory
+    // and doesn't trigger profile-specific method when switching profiles. This is
+    // intentional to maintain consistent behavior with external Claude Code CLI.
+    const needsEnvOverride: boolean = !!(
+      (profileId && profileId !== previousProfileId) ||
+      activeProfile?.configDir
+    );
 
     debugLog('[ClaudeIntegration:invokeClaudeAsync] Environment override check:', {
       profileIdProvided: !!profileId,
       previousProfileId,
+      newProfileId: activeProfile?.id,
+      hasConfigDir: !!activeProfile?.configDir,
       needsEnvOverride
     });
 
@@ -1335,12 +1394,12 @@ export async function invokeClaudeAsync(
       return; // Command already executed via configDir or temp-file method
     }
 
-    // Fall back to default method
-    if (activeProfile && !activeProfile.isDefault) {
-      debugLog('[ClaudeIntegration:invokeClaudeAsync] Using terminal environment for non-default profile:', activeProfile.name);
+    // Fall back to default method (no configDir available or not using config-dir method)
+    if (activeProfile && !activeProfile.configDir) {
+      debugLog('[ClaudeIntegration:invokeClaudeAsync] Profile has no configDir, using terminal environment:', activeProfile.name);
     }
 
-    const command = buildClaudeShellCommand(cwdCommand, pathPrefix, escapedClaudeCmd, { method: 'default' }, extraFlags);
+    const command = buildClaudeShellCommand(cwdCommand, pathPrefix, escapedClaudeCmd, { method: 'default', configDir: activeProfile?.configDir }, extraFlags);
     debugLog('[ClaudeIntegration:invokeClaudeAsync] Executing command (default method):', command);
     PtyManager.writeToPty(terminal, command);
 

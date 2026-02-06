@@ -96,7 +96,80 @@ export class ClaudeProfileManager {
     // This repairs emails that were truncated due to ANSI escape codes in terminal output
     this.migrateCorruptedEmails();
 
+    // Run one-time migration to reset default profile configDir
+    // This ensures default profile uses system default ~/.claude directory
+    this.migrateDefaultProfileConfigDir();
+
     this.initialized = true;
+  }
+
+  /**
+   * One-time migration to reset default profile's configDir to undefined.
+   *
+   * Previously, all profiles (including default) were created with isolated configDirs.
+   * This caused the default profile to use a different directory than the system's
+   * ~/.claude, leading to authorization issues.
+   *
+   * This migration resets the default profile's configDir to undefined, making it
+   * use the system default directory and match the behavior of external cmd.
+   *
+   * Additionally, it ensures the default profile's ID is 'default' and updates
+   * activeProfileId if it was pointing to the old ID.
+   */
+  private migrateDefaultProfileConfigDir(): void {
+    const defaultProfile = this.data.profiles.find(p => p.isDefault);
+
+    if (!defaultProfile) {
+      return;  // No default profile, nothing to migrate
+    }
+
+    let needsSave = false;
+
+    // Migrate configDir: reset to undefined if it was in our isolated directory
+    if (defaultProfile.configDir) {
+      const isolatedDirPrefix = CLAUDE_PROFILES_DIR.toLowerCase();
+      const configDirLower = defaultProfile.configDir.toLowerCase();
+
+      if (configDirLower.startsWith(isolatedDirPrefix)) {
+        console.warn('[ClaudeProfileManager] Migrating default profile to use system default config dir:', {
+          profileId: defaultProfile.id,
+          oldConfigDir: defaultProfile.configDir,
+          newConfigDir: 'system default (~/.claude)'
+        });
+
+        defaultProfile.configDir = undefined;  // Use system default
+        needsSave = true;
+      }
+    }
+
+    // Migrate ID to 'default' if it's using old format
+    // Previously, profiles used sanitizedName as ID (e.g., 'primary')
+    // New format uses hardcoded 'default' for the default profile
+    if (defaultProfile.id !== 'default') {
+      const oldId = defaultProfile.id;
+      defaultProfile.id = 'default';
+
+      // Update activeProfileId if it was pointing to the old ID
+      if (this.data.activeProfileId === oldId) {
+        this.data.activeProfileId = 'default';
+        console.warn('[ClaudeProfileManager] Updated activeProfileId:', {
+          oldId,
+          newId: 'default'
+        });
+      }
+
+      console.warn('[ClaudeProfileManager] Migrated default profile ID:', {
+        oldId,
+        newId: 'default'
+      });
+
+      needsSave = true;
+    }
+
+    if (needsSave) {
+      this.save();
+      console.warn('[ClaudeProfileManager] Default profile migration complete');
+    }
   }
 
   /**
@@ -173,16 +246,16 @@ export class ClaudeProfileManager {
    * The profile name is used as the directory name (sanitized to lowercase).
    */
   private createDefaultData(): ProfileStoreData {
-    // Use an isolated directory for the initial profile
-    // This prevents interference with external Claude Code CLI which uses ~/.claude
+    // Use system default Claude config directory for the default profile
+    // This ensures consistent behavior between app and external cmd
+    // Non-default profiles will use isolated directories to avoid conflicts
     const initialProfileName = 'Primary';
     const sanitizedName = initialProfileName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const isolatedConfigDir = join(CLAUDE_PROFILES_DIR, sanitizedName);
 
     const defaultProfile: ClaudeProfile = {
-      id: sanitizedName,  // Use sanitized name as ID (e.g., 'primary')
+      id: 'default',  // Use 'default' as ID for the default profile
       name: initialProfileName,
-      configDir: isolatedConfigDir,
+      configDir: undefined,  // Use system default ~/.claude directory
       isDefault: true,  // First profile is the default
       description: 'Primary Claude account',
       createdAt: new Date()
@@ -191,7 +264,7 @@ export class ClaudeProfileManager {
     return {
       version: 3,
       profiles: [defaultProfile],
-      activeProfileId: sanitizedName,
+      activeProfileId: 'default',
       autoSwitch: DEFAULT_AUTO_SWITCH_SETTINGS
     };
   }
@@ -488,14 +561,18 @@ export class ClaudeProfileManager {
    * By using CLAUDE_CONFIG_DIR, Claude CLI reads fresh tokens from Keychain each time,
    * which includes any refreshed tokens and full credential metadata.
    *
+   * Note: Default profile uses system default ~/.claude directory (configDir is undefined).
+   * Non-default profiles use isolated directories to prevent interference.
+   *
    * See: docs/LONG_LIVED_AUTH_PLAN.md for full context.
    */
   getActiveProfileEnv(): Record<string, string> {
     const profile = this.getActiveProfile();
     const env: Record<string, string> = {};
 
-    // All profiles now use explicit CLAUDE_CONFIG_DIR for isolation
-    // This prevents interference with external Claude Code CLI usage
+    // Non-default profiles use explicit CLAUDE_CONFIG_DIR for isolation
+    // Default profile uses system default ~/.claude (configDir is undefined)
+    // This ensures consistent behavior between app and external cmd for default profile
     if (profile?.configDir) {
       // Expand ~ to home directory for the environment variable
       const expandedConfigDir = normalizeWindowsPath(
@@ -508,8 +585,13 @@ export class ClaudeProfileManager {
       if (process.env.DEBUG === 'true') {
         console.warn('[ClaudeProfileManager] Using CLAUDE_CONFIG_DIR for profile:', profile.name, expandedConfigDir);
       }
+    } else if (profile?.isDefault) {
+      // Default profile uses system default, no CLAUDE_CONFIG_DIR needed
+      if (process.env.DEBUG === 'true') {
+        console.warn('[ClaudeProfileManager] Default profile using system default ~/.claude directory');
+      }
     } else {
-      console.warn('[ClaudeProfileManager] Profile has no configDir configured:', profile?.name);
+      console.warn('[ClaudeProfileManager] Non-default profile has no configDir configured:', profile?.name);
     }
 
     return env;
